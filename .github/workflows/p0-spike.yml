@@ -70,9 +70,18 @@ jobs:
       - name: Install Tauri CLI
         working-directory: spike/tauri-overlay
         run: npm ci
-      - name: Build Tauri app (no bundle)
+      - name: Build Rust side (locked)
         working-directory: spike/tauri-overlay
-        run: npm run tauri -- build --no-bundle
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo build --locked 2>&1 | tee build.log || {
+            tail -40 build.log | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          }
+      - name: Validate Tauri config via CLI
+        working-directory: spike/tauri-overlay
+        run: npm run tauri -- info
 
   cast-loop:
     name: 模拟 DLNA 闭环 (Linux runner)
