@@ -64,7 +64,7 @@ curl -i "http://127.0.0.1:18765/health?token=dev-token"
 
 | 任务 | 状态 |
 |---|---|
-| S1a 透明窗口 + Overlay + IPC | 工程骨架已建（`spike/tauri-overlay/`），**待装 Tauri CLI 后运行验证** |
+| S1a 透明窗口 + Overlay + IPC | 工程骨架已建；Tauri CLI 2.12.4 已装；**本机 `npx tauri build --no-bundle --debug` 编译通过**（exit 0，产出 `target/debug/tauri-overlay-spike.exe`，46s）；GUI 点按仍需人工验收 |
 | S1b libmpv 原生 surface | **阻塞：本机未安装 libmpv 动态库** |
 | S2 MpvEngine 最小封装 | 待 S1b |
 | **S3 206 Range 服务** | ✅ **已编译并 curl 实测通过**（见下表） |
@@ -116,3 +116,7 @@ git push -u origin master
 ```
 
 > CI 通过只证明「可编译 + 协议层闭环」，**不等于** Go/No-Go 全过：真机 DLNA、原生 surface 画面叠加与干净机器启动仍需人工验收。
+
+### 首轮 CI 结果与根因（run 42172489258）
+
+S3 三平台、模拟闭环、libmpv DLL 探针全绿；S1 三平台全红，根因是 `tauri-build` 找不到默认图标 `icons/icon.ico`。已补最小图标集 + `bundle.icon` 声明，本机复验构建通过。S1 判定同时收敛为 `cargo build --locked` + `tauri info`，失败日志回写 `::error::` annotation。详见 `docs/P0-REPORT.md` §6。

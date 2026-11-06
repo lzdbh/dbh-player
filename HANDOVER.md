@@ -276,7 +276,7 @@ sequenceDiagram
 
 **待办（按依赖顺序）**：
 
-1. 查看 GitHub Actions 三平台构建结果，修编译问题（尤其 Tauri 在 macOS / Linux 的系统依赖）。
+1. ~~查看 GitHub Actions 三平台构建结果~~ 首轮 run `42172489258`：S3 三平台 / 模拟闭环 / libmpv 探针全绿，S1 三平台因缺 `icons/icon.ico` 全红；已补图标集并本机复验通过，**待代理恢复后重推触发 CI 复验**（详见 `docs/P0-REPORT.md` §6）。
 2. 有 GUI 机器 + libmpv DLL 时验 S1b 原生 surface 叠加、S2 `MpvEngine` 最小封装。
 3. 用同网段 Android TV 真机验 S4（SSDP 发现、推 URL、Seek 续播），建设备兼容表。
 4. 打包后验 S5 干净机器启动。

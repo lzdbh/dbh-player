@@ -110,3 +110,33 @@ workflow：`.github/workflows/p0-spike.yml`，远端 `lzdbh/dbh-player`，触发
 | 正式工程 `src-tauri/` / `src/` | P0 放行后把可复用核心从 `spike/` 搬入 |
 
 > 约定：方案确认后才实施；`spike/` 是可弃验证代码，验证通过只搬可复用核心，不把 Spike 骨架当正式架构。
+
+---
+
+## 6. GitHub Actions 首轮结果与修复
+
+首轮 run `42172489258`（8 个 job，约 3 分钟）：
+
+| Job | 结果 |
+|---|---|
+| S3 · HTTP 206（ubuntu / macos / windows） | ✅ 3/3 success |
+| 模拟 DLNA 闭环（Linux runner） | ✅ success（10/10） |
+| S1b · libmpv DLL probe（Windows） | ✅ success |
+| S1 · 透明窗口工程（三平台） | ❌ 3/3 failure（均在 `Build Tauri app` 步骤） |
+
+**根因**：`tauri-build` 找不到默认图标。本机复现得到确切报错：
+
+```
+`...\spike\tauri-overlay\icons/icon.ico` not found;
+required for generating a Windows Resource file during tauri-build
+```
+
+匿名账号无法下载 job 日志（403 需 admin），因此改用「本机 CLI 复现 + check-run annotations 定位步骤」交叉定位；三平台同一步失败与图标缺失一致。
+
+**修复**：
+
+1. 生成最小占位图标集（`32x32.png` / `128x128.png` / `128x128@2x.png` / `icon.ico` / `icon.icns`，纯标准库、总计 < 2 KB），并在 `tauri.conf.json` 的 `bundle.icon` 显式声明。
+2. CI 的 S1 判定收敛为 `cargo build --locked`（Spike 阶段只需验证编译链）+ `tauri info` 校验配置；失败时把日志尾部回写成 `::error::` annotation，便于后续匿名诊断。
+3. **本机复验通过**：`npx tauri build --no-bundle --debug` → `exit 0`，产出 `target/debug/tauri-overlay-spike.exe`（46s）。
+
+> 修复提交已落地。若远端代理 `CONNECT tunnel 502` 导致重推延迟，CI 复验结果以 Actions 页面最新 run 为准；本地构建与协议验证结论不受影响。
