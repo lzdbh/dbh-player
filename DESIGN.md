@@ -212,7 +212,7 @@ pub trait CastTransport: Send + Sync {
 | 项 | 结果 |
 |---|---|
 | 模拟 DLNA 闭环 | `spike/cast-loop/` **10/10 通过**（Seek 30s 后从 `bytes=262144` 新偏移拉到 206） |
-| GitHub CI | `.github/workflows/p0-spike.yml`：4 个 job 覆盖三平台编译、206 复验、模拟闭环、libmpv DLL 探针；远端 `lzdbh/dbh-player` |
+| GitHub CI | `.github/workflows/p0-spike.yml`：4 个 job 覆盖三平台编译、206 复验、模拟闭环、libmpv DLL 探针；远端 `lzdbh/dbh-player`；第二轮 run `42173846262` **8/8 全绿** |
 | 本机 libmpv 下载 | GitHub release 直连仅 ~18 KB/s，改由 CI Windows runner 下载；仓库不提交 DLL / 7z 二进制 |
 | Tauri CLI | 2.12.4 已装，`package-lock.json` 入库供 CI `npm ci` |
 | 验收结论 | **协议链路成立，P0 未全过**；完整报告 `docs/P0-REPORT.md` |

@@ -119,4 +119,4 @@ git push -u origin master
 
 ### 首轮 CI 结果与根因（run 42172489258）
 
-S3 三平台、模拟闭环、libmpv DLL 探针全绿；S1 三平台全红，根因是 `tauri-build` 找不到默认图标 `icons/icon.ico`。已补最小图标集 + `bundle.icon` 声明，本机复验构建通过。S1 判定同时收敛为 `cargo build --locked` + `tauri info`，失败日志回写 `::error::` annotation。详见 `docs/P0-REPORT.md` §6。
+S3 三平台、模拟闭环、libmpv DLL 探针全绿；S1 三平台全红，根因是 `tauri-build` 找不到默认图标 `icons/icon.ico`。已补最小图标集 + `bundle.icon` 声明，本机复验构建通过。S1 判定同时收敛为 `cargo build --locked` + `tauri info`，失败日志回写 `::error::` annotation。第二轮 run `42173846262` **8/8 全绿**（S1 / S3 各三平台 + 模拟闭环 + libmpv 探针）。详见 `docs/P0-REPORT.md` §6。

@@ -5,7 +5,7 @@
 | 项目名 | dbhx-player（暂定，未最终命名） |
 | 项目根目录 | `E:\my-git\dbhx-player` |
 | 文档生成日期 | 2026-11-06（14:05 交付状态） |
-| 当前阶段 | **P0 已交付验收报告**：S3 与模拟 DLNA 闭环实测通过，三平台构建交 GitHub Actions；P0 未全过（真机 / GUI 未验） |
+| 当前阶段 | **P0 已交付验收报告**：S3 与模拟 DLNA 闭环实测通过，GitHub Actions 第二轮 8/8 全绿；P0 未全过（真机 / GUI 未验） |
 | 当前阻塞点 | 真机 Android TV、libmpv 原生 surface 的 GUI 验收、干净机器启动检查 |
 | 仓库状态 | 远端 `https://github.com/lzdbh/dbh-player.git`，多提交已推送；完整验收见 `docs/P0-REPORT.md` |
 
@@ -276,7 +276,7 @@ sequenceDiagram
 
 **待办（按依赖顺序）**：
 
-1. ~~查看 GitHub Actions 三平台构建结果~~ 首轮 run `42172489258`：S3 三平台 / 模拟闭环 / libmpv 探针全绿，S1 三平台因缺 `icons/icon.ico` 全红；已补图标集并本机复验通过，**待代理恢复后重推触发 CI 复验**（详见 `docs/P0-REPORT.md` §6）。
+1. ~~查看 CI 构建结果并修编译问题~~ 首轮 S1 三平台因缺 `icons/icon.ico` 全红 → 已补图标集；**第二轮 run `42173846262` 8/8 全绿**（S1 / S3 各三平台 + 模拟闭环 + libmpv 探针），详见 `docs/P0-REPORT.md` §6。
 2. 有 GUI 机器 + libmpv DLL 时验 S1b 原生 surface 叠加、S2 `MpvEngine` 最小封装。
 3. 用同网段 Android TV 真机验 S4（SSDP 发现、推 URL、Seek 续播），建设备兼容表。
 4. 打包后验 S5 干净机器启动。

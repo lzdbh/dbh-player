@@ -5,7 +5,7 @@
 | 生成日期 | 2026-11-06 |
 | 依据 | `HANDOVER.md`（交接 / 证据链）、`.workbuddy/imported-tasks/2026-11-06-cast-player/TASK.md`（需求原文）、`player-ui-mockup.html`（UI 示意图） |
 | 定位 | **决策用方案主文档**：只写「做什么、为什么、什么时候必须定」。调研证据、版本核实、参考链接仍以 `HANDOVER.md` 为准，本文不重复搬运 |
-| 状态 | 方案（13:40）与工程设计（13:45）均已确认；**P0 已交付验收报告**（S3 + 模拟闭环实测通过，真机 / GUI 未验，Go/No-Go 未全过）；三平台构建由 GitHub Actions 判定，见 `docs/P0-REPORT.md` |
+| 状态 | 方案（13:40）与工程设计（13:45）均已确认；**P0 已交付验收报告**（S3 + 模拟闭环实测通过，真机 / GUI 未验，Go/No-Go 未全过）；三平台构建由 GitHub Actions 判定且第二轮 8/8 全绿，见 `docs/P0-REPORT.md` |
 
 > 文档分工：`HANDOVER.md` 是给接手者看的档案，`PLAN.md` 是给用户拍板看的方案。后续阶段状态回写 HANDOVER 第 6/7/9 节，本文只维护决策基线。
 

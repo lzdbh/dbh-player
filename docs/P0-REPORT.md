@@ -5,7 +5,7 @@
 | 报告时间 | 2026-11-06 14:05 |
 | 方案基线 | `PLAN.md`（v2）、`DESIGN.md`（v1）、决策 A（GPL 开源）+ P0 先行 |
 | 远端 | `https://github.com/lzdbh/dbh-player.git` |
-| 结论 | **协议链路成立，P0 未全过**：S3 与模拟投屏闭环实测通过；真机 DLNA、原生 surface 画面叠加、干净机器启动仍未验收，Go/No-Go 不能判「全通过」 |
+| 结论 | **协议链路成立，P0 未全过**：CI 第二轮 8/8 全绿（三平台编译 + 206 + 模拟闭环 + libmpv DLL 探针），本机 Tauri 构建亦通过；真机 DLNA、GUI 画面叠加、干净机器启动仍未验收，Go/No-Go 不能判「全通过」 |
 
 ---
 
@@ -13,7 +13,7 @@
 
 | # | 判定项 | 结论 | 证据 / 缺口 |
 |---|---|---|---|
-| 1 | 三平台各自跑通 Tauri 2.12 + libmpv 原生 surface + 透明 Overlay 可点按 | ⚠️ **部分** | 工程骨架已建；本机 Windows GNU 链编译耗时过长，三平台编译交 CI 判定；libmpv DLL 探针交 Windows runner；**GUI 画面叠加与点按仍需人工看** |
+| 1 | 三平台各自跑通 Tauri 2.12 + libmpv 原生 surface + 透明 Overlay 可点按 | ⚠️ **部分（编译已过 / GUI 未验）** | 本机 `npx tauri build --no-bundle --debug` exit 0；CI 三平台 S1 构建 3/3 success；Windows runner libmpv DLL 探针 success；**原生 surface 画面叠加与 Overlay 点按仍需 GUI 人工验收** |
 | 2 | 真机 Android TV 发现 PC 并拉 206 本地流、正常播放 | ⚠️ **模拟通过 / 真机未验** | 模拟 Renderer 发现 → 推 URL → 拉 206 全通过；**SSDP 多播与真实电视未测** |
 | 3 | 拖动进度后电视从新位置续播 | ✅ **协议层通过** | 模拟 Renderer Seek 30s 后从 `bytes=262144-262243` 重新拉到 206；真机待验 |
 | 4 | 安装包能在干净机器（无预装 mpv / ffmpeg）启动 | ❌ **未验证** | 尚未打包分发 |
@@ -139,4 +139,15 @@ required for generating a Windows Resource file during tauri-build
 2. CI 的 S1 判定收敛为 `cargo build --locked`（Spike 阶段只需验证编译链）+ `tauri info` 校验配置；失败时把日志尾部回写成 `::error::` annotation，便于后续匿名诊断。
 3. **本机复验通过**：`npx tauri build --no-bundle --debug` → `exit 0`，产出 `target/debug/tauri-overlay-spike.exe`（46s）。
 
-> 修复提交已落地。若远端代理 `CONNECT tunnel 502` 导致重推延迟，CI 复验结果以 Actions 页面最新 run 为准；本地构建与协议验证结论不受影响。
+### 第二轮 CI（run `42173846262`，最终判定）
+
+代理恢复后重推全部 commit，第二轮 8 个 job **全部 success**：
+
+| Job | 结果 |
+|---|---|
+| S1 · 透明窗口工程（ubuntu / macos / windows） | ✅ 3/3 |
+| S3 · HTTP 206（ubuntu / macos / windows） | ✅ 3/3 |
+| 模拟 DLNA 闭环（Linux） | ✅ |
+| S1b · libmpv DLL probe（Windows） | ✅ |
+
+即：三平台编译链、206 Range、模拟投屏闭环、libmpv 动态库可用性均已由 CI 证实。**仍未验证的只有需要物理设备 / GUI 的部分**：真机 DLNA、原生 surface 画面叠加与 Overlay 点按、干净机器启动。
