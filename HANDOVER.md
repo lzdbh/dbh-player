@@ -4,16 +4,16 @@
 |---|---|
 | 项目名 | dbhx-player（暂定，未最终命名） |
 | 项目根目录 | `E:\my-git\dbhx-player` |
-| 文档生成日期 | 2026-11-06（13:40 更新决策状态） |
-| 当前阶段 | **方案与关键决策已书面确认**；`DESIGN.md` 工程设计待最后确认，未建立工程、未写业务代码 |
-| 当前阻塞点 | 仅剩「工程结构与接口设计」一道确认；授权阻塞已于 13:40 解除 |
-| 仓库状态 | git 已 init，master 分支，`No commits yet`，无 `.gitignore`；新增 `PLAN.md`、`DESIGN.md` 未提交 |
+| 文档生成日期 | 2026-11-06（14:05 交付状态） |
+| 当前阶段 | **P0 已交付验收报告**：S3 与模拟 DLNA 闭环实测通过，三平台构建交 GitHub Actions；P0 未全过（真机 / GUI 未验） |
+| 当前阻塞点 | 真机 Android TV、libmpv 原生 surface 的 GUI 验收、干净机器启动检查 |
+| 仓库状态 | 远端 `https://github.com/lzdbh/dbh-player.git`，多提交已推送；完整验收见 `docs/P0-REPORT.md` |
 
 ---
 
 ## 0. 一句话现状
 
-要做一个 **PC 端跨平台（macOS / Windows / Linux）的视频播放器**，体验参考 macOS 的 IINA，支持**投屏到安卓电视**；技术栈已锁定为 **Rust + Tauri 2.12 + Vue 3 + Ant Design Vue + Pinia**。架构方案、技术调研、界面示意图均已完成并核实。用户已于 2026-11-06 13:40 书面确认 **A（GPL 构建 + 项目开源）** 与 **P0 先行**，其余 5 项按 `PLAN.md` §6.2 默认值执行；按「再确认一次」的工作约定，实施前仍需确认 `DESIGN.md`，之后才进入 P0 Spike。
+要做一个 **PC 端跨平台（macOS / Windows / Linux）的视频播放器**，体验参考 macOS 的 IINA，支持**投屏到安卓电视**；技术栈已锁定为 **Rust + Tauri 2.12 + Vue 3 + Ant Design Vue + Pinia**。架构方案、技术调研、界面示意图均已完成并核实。用户于 2026-11-06 13:40 书面确认 **A（GPL 构建 + 项目开源）** 与 **P0 先行**，13:45 / 13:55 两次授权实施。现已完成仓库初始化、GPL 合规资产、S3 206 实测、模拟 DLNA 闭环 10/10、GitHub Actions 三平台构建矩阵并推送远端；结论是**协议链路成立、P0 未全过**，Go/No-Go 判定与证据见 `docs/P0-REPORT.md`。
 
 ---
 
@@ -234,8 +234,14 @@ sequenceDiagram
 | `player-ui-mockup.html` | **界面示意图**，单文件 HTML、无外部依赖，31,111 字节，sha256 `dad570798921f59fa6ae9477eac9ccd70b339a3996e24f41f582874f22f37bfd` |
 | `HANDOVER.md` | 本文档（交接 / 证据链） |
 | `PLAN.md` | 方案 v2，决策用主文档（2026-11-06 11:35） |
-| `DESIGN.md` | 工程结构与接口设计，实施前最后一份设计（2026-11-06 13:40） |
-| `.git/` | master 分支，无任何提交 |
+| `DESIGN.md` | 工程结构与接口设计（2026-11-06 13:40，§8 附执行记录） |
+| `README.md` / `LICENSE` | 项目说明与 GPLv3 全文（674 行） |
+| `THIRD_PARTY_NOTICES.md` | 第三方许可基线 + GPL 合规清单 |
+| `docs/BUILD.md` | 三平台构建前置、libmpv 来源、**P0 实测记录** |
+| `spike/media-server/` | S3 · axum HTTP 206 Range 验证 crate（**已编译并实测通过**） |
+| `spike/tauri-overlay/` | S1 · Tauri 2.12 透明窗口 + Overlay Spike 骨架（S1a / S1b 分级） |
+| `.gitignore` | 排除 `.workbuddy/`、`**/target/`、`node_modules/`、`spike/fixtures/` 等 |
+| `.git/` | master，2 个 commit：`5e3de54`、`daebbe9` |
 
 **示意图说明**（浏览器直接打开即可）：
 - IINA 式深色播放器窗口：内联 SVG 夜景作视频画面占位 + 字幕渲染、悬浮 OSC 控制条（进度/缓冲/缩略图预览/倍速/字幕/音轨/PiP/全屏）、可折叠播放列表侧栏、投屏面板。
@@ -243,7 +249,7 @@ sequenceDiagram
 - 设计意图：体现「libmpv 原生视频层 + Vue 透明 Overlay」分层、DLNA 零安装发现 + 手动 IP 兜底、投屏后 PC 转为遥控器。
 - 窗口下方 ① ~ ④ 编号卡片对应四个区块的技术映射说明。
 
-**git 状态**（2026-11-06 13:40）：`?? .workbuddy/`、`?? HANDOVER.md`、`?? PLAN.md`、`?? DESIGN.md`、`?? player-ui-mockup.html`，均未提交；仓库**尚无 `.gitignore`**、仍为 `No commits yet`。
+**git 状态**（2026-11-06 14:05）：远端 `https://github.com/lzdbh/dbh-player.git`（空仓起步）已配置并推送；提交按「文档 / 合规资产 / Spike 验证工程 / CI / 验收报告」逻辑拆分，具体见 `git log`。`.workbuddy/`、`**/target/`、`node_modules/`、`spike/fixtures/` 与 DLL / 7z 二进制均由 `.gitignore` 排除。
 
 > **关于 `.workbuddy/`**：这是 WorkBuddy 宿主自动创建的项目数据目录（**不是临时缓存，不要删除**）。其中 `imported-tasks/2026-11-06-cast-player/TASK.md` 是会话导入时自动生成的任务卡，内容与本文档第 1~6 节高度重合；同目录另有 `conversation-data.json`（完整会话归档）与 `share-shell.html`。
 >
@@ -266,11 +272,16 @@ sequenceDiagram
 
 ## 11. 下一步（按顺序）
 
-1. **等用户确认 `DESIGN.md`**（工程结构与接口设计），或直接回复「按此开工」。
-2. 确认后 P0 第一步：补 `.gitignore`（含 `.workbuddy/`）+ 首次提交（示意图、`PLAN.md`、`DESIGN.md`、本文档）。
-3. 按 S1→S5 执行 **P0 Spike**：先打通三平台 libmpv 透明窗口与真机 DLNA 206 推流两条最高风险链路；S1 先出 Windows 结果，macOS / Linux 走 CI 构建矩阵，视觉验收留真机。
-4. P0 结束按 4 条 Go/No-Go 判定项决定进入 P1 或调整架构（`PLAN.md` §4、`DESIGN.md` §8）。
-5. 每完成一个阶段，回来更新本文档第 6 / 7 / 9 节状态。
+**已交付（13:45~14:05）**：① `.gitignore` + 初始化提交；② GPL 合规资产；③ S3 206 实测；④ 模拟 DLNA 闭环 10/10；⑤ GitHub Actions 三平台构建矩阵并推送 `lzdbh/dbh-player`；⑥ `docs/P0-REPORT.md` 验收报告。结论：**协议链路成立、P0 未全过**，逐条判定见该报告 §1。
+
+**待办（按依赖顺序）**：
+
+1. 查看 GitHub Actions 三平台构建结果，修编译问题（尤其 Tauri 在 macOS / Linux 的系统依赖）。
+2. 有 GUI 机器 + libmpv DLL 时验 S1b 原生 surface 叠加、S2 `MpvEngine` 最小封装。
+3. 用同网段 Android TV 真机验 S4（SSDP 发现、推 URL、Seek 续播），建设备兼容表。
+4. 打包后验 S5 干净机器启动。
+5. 4 条 Go/No-Go 全过后，把 `spike/` 可复用核心搬进正式 `src-tauri/` / `src/`，进入 P1。
+6. 每完成一个阶段，回来更新本文档第 6 / 7 / 9 节状态。
 
 ---
 

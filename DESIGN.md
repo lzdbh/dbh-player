@@ -196,6 +196,27 @@ pub trait CastTransport: Send + Sync {
 
 **环境前置**：Rust ≥ 1.90（Tauri 2.12 MSRV）、Node、Tauri CLI、各平台 libmpv 动态库、一台同网段 Android TV。
 
+### 执行记录（2026-11-06 13:50）
+
+| 项 | 结果 |
+|---|---|
+| 仓库初始化 | `.gitignore` 已补（含 `.workbuddy/`）；2 个 commit：`5e3de54` 文档与示意图、`daebbe9` GPL 合规资产 |
+| 合规资产 | `LICENSE`（GPLv3 全文 674 行）、`README.md`、`THIRD_PARTY_NOTICES.md`、`docs/BUILD.md` 已落 |
+| **S3** | `spike/media-server/`（axum 0.8.9 + tokio 1.54.1）编译通过；206 / 416 / 403 / 404 / 200 / 后缀 Range 全部 curl 实测通过，详见 `docs/BUILD.md` §5 |
+| S1 | `spike/tauri-overlay/` 骨架已建（透明窗口 + Overlay + IPC），拆 S1a / S1b；S1b 待 libmpv DLL |
+| 环境修复 | Windows GNU 工具链缺 `dlltool.exe`，编译前 `export PATH="/c/msys64/mingw64/bin:$PATH"` 即可，未改全局配置 |
+| 未提交 | `spike/` 全部验证代码按「不擅自提交」约定保持未跟踪 |
+
+### 14:05 补充执行记录
+
+| 项 | 结果 |
+|---|---|
+| 模拟 DLNA 闭环 | `spike/cast-loop/` **10/10 通过**（Seek 30s 后从 `bytes=262144` 新偏移拉到 206） |
+| GitHub CI | `.github/workflows/p0-spike.yml`：4 个 job 覆盖三平台编译、206 复验、模拟闭环、libmpv DLL 探针；远端 `lzdbh/dbh-player` |
+| 本机 libmpv 下载 | GitHub release 直连仅 ~18 KB/s，改由 CI Windows runner 下载；仓库不提交 DLL / 7z 二进制 |
+| Tauri CLI | 2.12.4 已装，`package-lock.json` 入库供 CI `npm ci` |
+| 验收结论 | **协议链路成立，P0 未全过**；完整报告 `docs/P0-REPORT.md` |
+
 ---
 
 ## 9. 最后一道确认

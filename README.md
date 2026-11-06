@@ -29,4 +29,8 @@ Rust + Tauri 2.12 + Vue 3 + Ant Design Vue + Pinia；播放内核 libmpv 0.41 �
 
 ## 状态
 
-P0 Spike 正在验证两条最高风险链路：① 三平台 libmpv 透明窗口 + Overlay；② 真机 DLNA 推本地 206 流。验收标准见 `PLAN.md` §4 与 `DESIGN.md` §8。
+P0 Spike 正在验证两条最高风险链路：① 三平台 libmpv 透明窗口 + Overlay；② 真机 DLNA 推本地 206 流。验收标准见 `PLAN.md` §4 与 `DESIGN.md` §8，实测记录见 `docs/BUILD.md` §5 与 `docs/P0-REPORT.md`。
+
+## 持续集成
+
+远端：`https://github.com/lzdbh/dbh-player.git`。推送 `master` / `main` 或手动触发 `workflow_dispatch` 后，`.github/workflows/p0-spike.yml` 会在 **windows / macOS / Linux** 三平台跑 S1 透明窗口工程与 S3 媒体服务构建，并在 Linux runner 上复验 206 Range 与模拟 DLNA 闭环、在 Windows runner 上下载 mpv dev 包做 libmpv API 探针。本机覆盖不到的 macOS / Linux 编译由 CI 承担。

@@ -60,14 +60,59 @@ curl -i "http://127.0.0.1:18765/health?token=dev-token"
 
 判定：206 响应带 `Content-Range`、`Accept-Ranges: bytes`、`Content-Length` 与正确 MIME；越界 416；token 错 403；URL 只认映射 ID、不接受原始路径。
 
-## 5. 当前 P0 状态
+## 5. 当前 P0 状态（2026-11-06 13:50）
 
 | 任务 | 状态 |
 |---|---|
-| S1 透明窗口 + libmpv + Overlay | 骨架已建，**编译验证阻塞于 Tauri CLI / libmpv 动态库** |
-| S2 MpvEngine 最小封装 | 待 S1 |
-| S3 206 Range 服务 | 代码已落，`cargo build` + curl 验证结果见 `HANDOVER.md` §11 |
+| S1a 透明窗口 + Overlay + IPC | 工程骨架已建（`spike/tauri-overlay/`），**待装 Tauri CLI 后运行验证** |
+| S1b libmpv 原生 surface | **阻塞：本机未安装 libmpv 动态库** |
+| S2 MpvEngine 最小封装 | 待 S1b |
+| **S3 206 Range 服务** | ✅ **已编译并 curl 实测通过**（见下表） |
 | S4 真机 DLNA 推流与 Seek | **阻塞：无同网段 Android TV** |
 | S5 干净机器启动检查 | 待打包后 |
 
+### 环境修复记录
+
+默认 toolchain 是 `stable-x86_64-pc-windows-gnu`，`windows-sys 0.61` 构建时调用 `dlltool.exe`，而该文件只在 `/c/msys64/mingw64/bin/`、不在 PATH，导致 `error calling dlltool: program not found`。**编译前临时加 PATH 即可，不改全局配置**：
+
+```bash
+export PATH="/c/msys64/mingw64/bin:$PATH"   # 提供 dlltool + gcc（GNU 链接器）
+cd spike/media-server && cargo build
+```
+
+首次 `cargo build` 还出现过一次 `failed to create directory target / 拒绝访问 (os error 5)`，重试即通过（瞬时目录创建失败，非权限策略问题）。
+
+### S3 实测结果（512 KB 样本，端口 18765）
+
+| 用例 | 结果 |
+|---|---|
+| `Range: bytes=100-199` | `206` + `content-range: bytes 100-199/524288`、`content-length: 100`、`accept-ranges: bytes`，body 实测 100 字节 ✅ |
+| `Range: bytes=-10` | `206` + `bytes 524278-524287/524288`、`content-length: 10` ✅ |
+| `Range: bytes=99999999-` | `416` + `content-range: bytes */524288` ✅ |
+| 无 Range | `200` + `content-length: 524288` + `accept-ranges: bytes` ✅ |
+| token 错误 / 未知 media id / health | `403` / `404` / `200 ok` ✅ |
+
+> 样本为 `.bin`，故 MIME 为 `application/octet-stream`；MKV / MP4 / TS / 字幕的 MIME 映射已在代码，正式接入时用真实文件复验。Spike 绑定 `127.0.0.1`，正式版需绑局域网地址并按已配对设备 IP 过滤。
+
 > 当前开发机为 Windows，S1 只能本机验 Windows；macOS / Linux 计划走 CI 构建矩阵，透明窗口的视觉验收仍需真机。
+
+## 6. GitHub Actions 三平台构建
+
+远端：`https://github.com/lzdbh/dbh-player.git`（空仓起步）。workflow：`.github/workflows/p0-spike.yml`，触发条件为 push `master` / `main`、PR、`workflow_dispatch`。
+
+| Job | 平台 | 验证内容 |
+|---|---|---|
+| `s3-media-server` | ubuntu / macos / windows | `cargo build --locked`；Linux 上另跑 206 / 416 curl 复验 |
+| `s1-tauri-overlay` | ubuntu / macos / windows | 装 Linux WebKitGTK 4.1 依赖 → `npm ci` → `tauri build --no-bundle` |
+| `cast-loop` | ubuntu | 启动 S3 服务，跑 `spike/cast-loop/cast_loop_test.py` 模拟 DLNA 闭环 |
+| `libmpv-probe` | windows | 从 GitHub releases 下载 `mpv-dev-x86_64-*.7z`，7z 解压后用 ctypes 调 `mpv_client_api_version` / `mpv_create` / `mpv_terminate_destroy` |
+
+本机直连 GitHub release 仅 ~18 KB/s（30 MB 包约需 28 分钟），因此 dev 包的下载与 DLL 探针放到 CI 的 Windows runner 执行；仓库**不提交任何 DLL / 7z 二进制**（见 `.gitignore`）。
+
+```bash
+git remote add origin https://github.com/lzdbh/dbh-player.git
+git push -u origin master
+# 或在 GitHub 仓库页 Actions → P0 Spike → Run workflow 手动触发
+```
+
+> CI 通过只证明「可编译 + 协议层闭环」，**不等于** Go/No-Go 全过：真机 DLNA、原生 surface 画面叠加与干净机器启动仍需人工验收。
