@@ -28,3 +28,11 @@ spike/fixtures/
 *.mov
 *.m4v
 *.log
+
+# Downloaded / extracted third-party binaries (fetched by CI instead)
+spike/_download/
+spike/tauri-overlay/lib/
+*.7z
+*.dll
+*.def
+*.lib
