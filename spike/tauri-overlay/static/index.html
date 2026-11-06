@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>S1 Transparent Overlay Spike</title>
+<style>
+  html,body{margin:0;height:100%;background:transparent;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:#ececf1}
+  .video{position:absolute;inset:0;background:rgba(9,14,28,.55);border-radius:12px}
+  .hint{position:absolute;top:18px;left:20px;font-size:12px;color:#9aa6bd;letter-spacing:.04em}
+  .osc{position:absolute;left:0;right:0;bottom:0;padding:26px 20px 18px;background:linear-gradient(180deg,transparent,rgba(6,8,14,.9))}
+  .track{height:4px;border-radius:4px;background:rgba(255,255,255,.22);position:relative}
+  .track i{position:absolute;left:0;top:0;bottom:0;width:38%;background:#6f9bff;border-radius:4px;display:block}
+  .row{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  button{font:inherit;font-size:12px;color:#ececf1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:7px;padding:7px 12px;cursor:pointer}
+  button:hover{background:rgba(111,155,255,.22)}
+  .out{font-size:12px;color:#4ade80;min-height:18px}
+</style>
+</head>
+<body>
+<div class="video">
+  <div class="hint">S1a · 透明窗口 + Overlay 可点按（libmpv surface 为 S1b）</div>
+  <div class="osc">
+    <div class="track"><i></i></div>
+    <div class="row">
+      <button id="ping">点我验证 IPC</button>
+      <button id="status">查看 surface 状态</button>
+      <span class="out" id="out"></span>
+    </div>
+  </div>
+</div>
+<script>
+  const invoke = (cmd, args) => window.__TAURI_INTERNALS__.invoke(cmd, args);
+  const out = document.getElementById('out');
+  document.getElementById('ping').onclick = async () => {
+    out.textContent = await invoke('overlay_ping', { label: 'overlay' });
+  };
+  document.getElementById('status').onclick = async () => {
+    out.textContent = JSON.stringify(await invoke('surface_status'));
+  };
+</script>
+</body>
+</html>
