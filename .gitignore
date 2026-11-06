@@ -1,0 +1,30 @@
+# WorkBuddy host data (project data, NOT a cache)
+.workbuddy/
+
+# Rust / Tauri
+target/
+**/target/
+*.rs.bk
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local test media (large binaries, never commit)
+spike/fixtures/
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.m4v
+*.log

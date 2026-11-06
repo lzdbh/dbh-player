@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player · 软件界面示意图</title>
+<style>
+:root{
+  --bg:#08080a;
+  --surface:#121216;
+  --surface-2:#17171c;
+  --surface-3:#1e1e24;
+  --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);
+  --text:#ececf1;
+  --text-2:#9a9aa6;
+  --text-3:#65656f;
+  --accent:#6f9bff;
+  --accent-soft:rgba(111,155,255,.14);
+  --ok:#4ade80;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:13px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:36px 28px 56px}
+.icon{width:16px;height:16px;display:inline-block;vertical-align:middle;fill:currentColor}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+
+/* header */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px}
+h1{margin:0;font-size:22px;font-weight:500;letter-spacing:-.01em}
+.sub{margin:6px 0 0;color:var(--text-2);font-size:13px}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+.seg button{padding:6px 13px;border-radius:6px;font-size:12px;color:var(--text-2);white-space:nowrap;transition:.18s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--surface-3);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.seg-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg-label{font-size:11px;color:var(--text-3);letter-spacing:.04em}
+
+/* window */
+.window{
+  position:relative;background:var(--surface);border:1px solid var(--line-2);
+  border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 32px 90px rgba(0,0,0,.62),0 0 0 1px rgba(0,0,0,.4);
+}
+.titlebar{
+  height:42px;display:flex;align-items:center;gap:12px;padding:0 14px;
+  background:linear-gradient(180deg,#1d1d22,#18181d);
+  border-bottom:1px solid var(--line);position:relative;z-index:5;
+}
+.traffic{display:flex;gap:8px;align-items:center}
+.traffic i{width:11px;height:11px;border-radius:50%;display:block}
+.traffic i:nth-child(1){background:#ff5f57}
+.traffic i:nth-child(2){background:#febc2e}
+.traffic i:nth-child(3){background:#28c840}
+.win-buttons{display:none;gap:2px;margin-left:auto}
+.win-buttons button{width:34px;height:30px;display:grid;place-items:center;color:var(--text-2)}
+.win-buttons button:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.win-buttons button.danger:hover{background:#c42b1c;color:#fff}
+.win-title{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:12px;color:var(--text-2);white-space:nowrap;max-width:46%;overflow:hidden;text-overflow:ellipsis;
+}
+.tb-actions{margin-left:auto;display:flex;gap:4px;align-items:center}
+.win-buttons.on-darwin{display:none}
+body[data-platform="win"] .traffic,
+body[data-platform="linux"] .traffic{display:none}
+body[data-platform="win"] .win-buttons,
+body[data-platform="linux"] .win-buttons{display:flex}
+body[data-platform="linux"] .win-buttons button{border-radius:50%;width:26px;height:26px}
+.tb-btn{width:30px;height:28px;display:grid;place-items:center;border-radius:6px;color:var(--text-2);transition:.18s}
+.tb-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.tb-btn.active{color:var(--accent);background:var(--accent-soft)}
+
+/* body */
+.win-body{display:flex;height:588px;position:relative}
+.video{
+  flex:1;min-width:0;position:relative;overflow:hidden;background:#0d1524;
+}
+.video svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.subtitle{
+  position:absolute;bottom:104px;left:0;right:0;text-align:center;
+  font-size:17px;letter-spacing:.02em;color:#fff;
+  text-shadow:0 2px 8px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,1);
+  padding:0 60px;pointer-events:none;z-index:2;
+}
+.badge-live{
+  position:absolute;top:16px;left:16px;z-index:3;
+  display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:20px;
+  background:rgba(8,10,18,.55);border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(12px);font-size:11px;color:#dcdce4;
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ok);display:block;box-shadow:0 0 0 3px rgba(74,222,128,.15)}
+
+/* on-screen controller */
+.osc{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;padding:44px 20px 16px;
+  background:linear-gradient(180deg,transparent 0%,rgba(6,8,14,.72) 45%,rgba(6,8,14,.94) 100%);
+}
+.track{height:4px;border-radius:4px;background:rgba(255,255,255,.18);position:relative;cursor:pointer;margin-bottom:14px}
+.track .buffer{position:absolute;left:0;top:0;bottom:0;width:58%;background:rgba(255,255,255,.16);border-radius:4px}
+.track .played{position:absolute;left:0;top:0;bottom:0;width:var(--progress,39%);background:var(--accent);border-radius:4px}
+.track .knob{position:absolute;left:var(--progress,39%);top:50%;width:11px;height:11px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 1px 5px rgba(0,0,0,.6)}
+.thumb{
+  position:absolute;bottom:16px;left:calc(var(--progress,39%) - 54px);width:108px;height:62px;
+  border-radius:6px;border:1px solid rgba(255,255,255,.22);overflow:hidden;
+  background:#172238;box-shadow:0 8px 24px rgba(0,0,0,.6);
+  opacity:0;transition:opacity .18s;pointer-events:none;
+}
+.track:hover .thumb{opacity:1}
+.thumb svg{width:100%;height:100%;display:block}
+.osc-row{display:flex;align-items:center;gap:6px}
+.obtn{width:32px;height:32px;border-radius:7px;display:grid;place-items:center;color:#e7e7ec;transition:.16s}
+.obtn:hover{background:rgba(255,255,255,.13)}
+.obtn.primary{width:38px;height:38px;background:#fff;color:#101014;border-radius:50%}
+.obtn.primary:hover{background:#e6e6ec}
+.obtn.primary .icon{width:18px;height:18px}
+.time{font-variant-numeric:tabular-nums;font-size:12px;color:#d7d7de;margin-left:10px;letter-spacing:.02em}
+.time span{color:#8b8b97}
+.spacer{flex:1}
+.chip{font-size:11px;color:#d7d7de;padding:5px 8px;border-radius:6px;letter-spacing:.03em}
+.chip:hover{background:rgba(255,255,255,.13)}
+
+/* sidebar */
+.sidebar{
+  width:270px;flex:none;background:var(--surface-2);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;transition:width .25s ease,opacity .2s;overflow:hidden;
+}
+.sidebar.hidden{width:0;opacity:0;border-left:0}
+.sb-head{padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.sb-title{font-size:12px;font-weight:500;letter-spacing:.04em}
+.sb-count{font-size:11px;color:var(--text-3)}
+.sb-list{overflow:auto;padding:0 8px 16px;flex:1}
+.sb-item{display:flex;gap:11px;align-items:center;padding:9px 9px;border-radius:8px;cursor:pointer;transition:.15s}
+.sb-item:hover{background:rgba(255,255,255,.05)}
+.sb-item.on{background:var(--accent-soft)}
+.poster{width:42px;height:30px;border-radius:4px;flex:none;background:#24304a;overflow:hidden;position:relative}
+.poster i{position:absolute;inset:auto 0 0 0;height:45%;background:rgba(0,0,0,.35)}
+.poster.p2{background:#3a2a3f}.poster.p3{background:#243c3a}.poster.p4{background:#3c3426}.poster.p5{background:#2a2f44}
+.sb-name{font-size:12px;color:#d9d9e0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sb-item.on .sb-name{color:var(--accent)}
+.sb-dur{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.sb-foot{padding:12px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--text-3);flex:none}
+
+/* cast panel */
+.cast-panel{
+  position:absolute;top:14px;right:14px;width:308px;z-index:6;
+  background:rgba(24,24,29,.94);backdrop-filter:blur(22px);
+  border:1px solid rgba(255,255,255,.14);border-radius:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;
+}
+.cast-panel[hidden]{display:none}
+.cp-head{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.cp-title{font-size:13px;font-weight:500}
+.cp-close{color:var(--text-3);width:22px;height:22px;display:grid;place-items:center;border-radius:5px}
+.cp-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.cp-body{padding:8px}
+.cp-hint{font-size:11px;color:var(--text-3);padding:6px 8px 10px}
+.device{
+  display:flex;align-items:center;gap:11px;padding:10px 9px;border-radius:8px;cursor:pointer;transition:.15s;
+}
+.device:hover{background:rgba(255,255,255,.06)}
+.dev-ico{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.07);display:grid;place-items:center;color:#c9c9d3;flex:none}
+.dev-meta{flex:1;min-width:0}
+.dev-name{font-size:12px;color:#e4e4ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-sub{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-arrow{color:var(--text-3)}
+.scanning{display:flex;align-items:center;gap:9px;padding:10px 9px;color:var(--text-3);font-size:11px}
+.spin{width:12px;height:12px;border:1.5px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.cp-div{height:1px;background:var(--line);margin:8px 4px}
+.manual{display:flex;align-items:center;gap:9px;padding:9px;border-radius:8px;color:var(--text-2);font-size:12px;cursor:pointer}
+.manual:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.cp-foot{padding:10px 14px;border-top:1px solid var(--line);font-size:10.5px;color:var(--text-3);line-height:1.5}
+
+/* casting view */
+.connected{padding:14px 10px 8px}
+.conn-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.conn-ico{width:40px;height:40px;border-radius:10px;background:rgba(74,222,128,.12);display:grid;place-items:center;color:var(--ok);flex:none}
+.conn-name{font-size:13px}
+.conn-state{font-size:11px;color:var(--ok)}
+.conn-card{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:9px;padding:12px}
+.conn-file{font-size:12px;color:#e4e4ea;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conn-track{height:3px;background:rgba(255,255,255,.14);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.conn-track i{display:block;height:100%;width:39%;background:var(--ok)}
+.conn-time{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.conn-note{font-size:11px;color:var(--text-2);margin:12px 4px 4px;line-height:1.65}
+.disconnect{
+  display:block;width:100%;text-align:center;padding:9px;border:1px solid var(--line-2);
+  border-radius:8px;font-size:12px;color:#e4e4ea;transition:.16s;margin-top:6px;
+}
+.disconnect:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.28)}
+
+/* callouts */
+.callouts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+.callout{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 15px}
+.co-num{font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.08em;margin-bottom:7px}
+.co-title{font-size:12.5px;font-weight:500;margin-bottom:5px}
+.co-desc{font-size:11.5px;color:var(--text-2);line-height:1.6}
+.foot{
+  margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3)
+}
+.foot b{font-weight:500;color:var(--text-2)}
+.foot code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#a9b6d4;font-size:11px}
+
+@media (max-width:1000px){
+  .callouts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .win-body{height:520px}
+}
+@media (max-width:720px){
+  .wrap{padding:22px 14px 40px}
+  .sidebar{display:none}
+  .cast-panel{width:min(308px,calc(100% - 28px))}
+  .win-title{display:none}
+  .callouts{grid-template-columns:1fr}
+  .subtitle{font-size:14px;bottom:96px;padding:0 24px}
+  .time{font-size:11px}
+  .chip{display:none}
+}
+</style>
+</head>
+<body data-platform="mac">
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.2v14H7zm6.8 0H17v14h-3.2z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5h2v14H6zm3.5 7L19 5.5v13z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5.5l9.5 6.5L5 18.5z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3.4L12 5.6v12.8L7.4 14.5H4zm11.4-1.3a5.5 5.5 0 0 1 0 7.6l1.2 1.2a7.2 7.2 0 0 0 0-10z"/></symbol>
+  <symbol id="i-cc" viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm2.5 6.2h4v1.4h-1.2v2.2h2.1v1.3H5.5zm8.1 0h4v1.4h-1.2v2.2h2.1v1.3h-4.9z" transform="translate(0 -1)"/></symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 10v4h3l4 3.5v-11L7 10zm10.5-.8a4 4 0 0 1 0 5.6l1.1 1.1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h11v1.6H4zm0 4.7h11v1.6H4zm0 4.7h8v1.6H4zm14-7.4h2v2h-2zm0 4.7h2v2h-2zm0 4.7h2v2h-2z"/></symbol>
+  <symbol id="i-cast" viewBox="0 0 24 24"><path d="M2 19h3a3 3 0 0 1 3 3h1.6A4.6 4.6 0 0 0 5 17.4V19zm0-4.2a7.3 7.3 0 0 1 7.3 7.2H11A8.9 8.9 0 0 0 2 13.2zM2 5h16a1 1 0 0 1 1 1v3.5h1.6V6A2.6 2.6 0 0 0 18 3.4H2A1.6 1.6 0 0 0 .4 5v11.4A1.6 1.6 0 0 0 2 18h6.2v-1.6H2z"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 4h6v1.6H5.6V10H4zm10 0h6v6h-1.6V5.6H14zM4 14h1.6v4.4H10V20H4zm14.4 0H20v6h-6v-1.6h4.4z"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 6h8v6h-8z" transform="translate(0 0)"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-7v2h3v1.5H7V20h3v-2H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm.6 1.6v9.8h16.8V6.6z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8h16a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zm2 3v1.5h4V11zm0 3.5v1.5h2V14.5z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.2 5 5.8 5.8L17.8 5 19 6.2 13.2 12 19 17.8 17.8 19 12 13.2 6.2 19 5 17.8 10.8 12 5 6.2z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7-1.2-1.2L13.6 12 7.8 6.2z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 1.7a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6zM10.4 2h3.2l.5 2.2 1.6.7 2-.9 2.3 2.3-.9 2 .7 1.6 2.2.5v3.2l-2.2.5-.7 1.6.9 2-2.3 2.3-2-.9-1.6.7-.5 2.2h-3.2l-.5-2.2-1.6-.7-2 .9-2.3-2.3.9-2-.7-1.6L2 14.4v-3.2l2.2-.5.7-1.6-.9-2 2.3-2.3 2 .9 1.6-.7z"/></symbol>
+  <symbol id="i-min" viewBox="0 0 24 24"><path d="M5 11h14v1.5H5z"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M5 5h14v14H5zm1.5 1.5v11h11v-11z"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="eyebrow">UI concept · v0.1</div>
+      <h1>桌面播放器 · 界面示意图</h1>
+      <p class="sub">IINA 式深色极简 · PC 端跨平台（macOS / Windows / Linux）· 投屏到 Android TV</p>
+    </div>
+    <div class="seg-row">
+      <div>
+        <div class="seg-label" style="margin-bottom:6px">投屏状态</div>
+        <div class="seg" id="stateSeg">
+          <button data-state="local" class="on">本地播放</button>
+          <button data-state="discover">发现设备</button>
+          <button data-state="casting">投屏中</button>
+        </div>
+      </div>
+      <div>
+        <div class="seg-label" style="margin-bottom:6px">窗口平台</div>
+        <div class="seg" id="platSeg">
+          <button data-plat="mac" class="on">macOS</button>
+          <button data-plat="win">Windows</button>
+          <button data-plat="linux">Linux</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="window" id="window">
+    <div class="titlebar">
+      <div class="traffic"><i></i><i></i><i></i></div>
+      <div class="win-title" id="winTitle">星际穿越.2014.2160p.mkv</div>
+      <div class="tb-actions">
+        <button class="tb-btn" id="castBtn" title="投屏"><svg class="icon"><use href="#i-cast"/></svg></button>
+        <button class="tb-btn active" id="listBtn" title="播放列表"><svg class="icon"><use href="#i-list"/></svg></button>
+        <button class="tb-btn" title="偏好设置"><svg class="icon"><use href="#i-settings"/></svg></button>
+      </div>
+      <div class="win-buttons">
+        <button title="最小化"><svg class="icon"><use href="#i-min"/></svg></button>
+        <button title="最大化"><svg class="icon"><use href="#i-max"/></svg></button>
+        <button class="danger" title="关闭"><svg class="icon" style="width:12px;height:12px"><use href="#i-close"/></svg></button>
+      </div>
+    </div>
+
+    <div class="win-body">
+      <div class="video" id="video">
+        <svg class="scene" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid slice" aria-label="视频画面占位：夜色山脊与月亮">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0c1428"/>
+              <stop offset="55%" stop-color="#22304e"/>
+              <stop offset="100%" stop-color="#4a5570"/>
+            </linearGradient>
+            <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1b2740"/>
+              <stop offset="100%" stop-color="#0a1120"/>
+            </linearGradient>
+          </defs>
+          <rect width="1100" height="620" fill="url(#sky)"/>
+          <circle cx="828" cy="146" r="86" fill="#e9e3d2" opacity=".045"/>
+          <circle cx="828" cy="146" r="58" fill="#e9e3d2" opacity=".07"/>
+          <circle cx="828" cy="146" r="38" fill="#ece6d6" opacity=".92"/>
+          <g fill="#dfe6f5" opacity=".55">
+            <circle cx="120" cy="70" r="1.3"/><circle cx="212" cy="128" r="1"/><circle cx="310" cy="58" r="1.2"/>
+            <circle cx="430" cy="104" r=".9"/><circle cx="560" cy="46" r="1.1"/><circle cx="664" cy="118" r="1"/>
+            <circle cx="742" cy="62" r="1.2"/><circle cx="950" cy="88" r="1"/><circle cx="1024" cy="52" r="1.2"/>
+            <circle cx="88" cy="182" r="1"/><circle cx="376" cy="168" r="1.1"/><circle cx="612" cy="192" r=".9"/>
+          </g>
+          <path d="M0 424 L148 348 L262 398 L408 292 L548 382 L690 318 L846 396 L990 336 L1100 386 L1100 620 L0 620Z" fill="#1a2740"/>
+          <path d="M0 476 L176 416 L334 462 L498 400 L672 468 L842 410 L1006 462 L1100 430 L1100 620 L0 620Z" fill="#121d33"/>
+          <rect y="498" width="1100" height="122" fill="url(#water)"/>
+          <path d="M790 502 L866 502 L900 620 L756 620Z" fill="#dcd6c4" opacity=".055"/>
+          <path d="M0 528 L1100 528" stroke="#8ea0c0" stroke-width=".6" opacity=".12"/>
+          <path d="M0 556 L1100 556" stroke="#8ea0c0" stroke-width=".6" opacity=".09"/>
+          <path d="M0 590 L1100 590" stroke="#8ea0c0" stroke-width=".6" opacity=".07"/>
+          <path d="M0 620 L1100 620" stroke="#000" stroke-width="0"/>
+        </svg>
+
+        <div class="badge-live"><i class="dot"></i><span id="liveText">本地播放 · libmpv</span></div>
+        <div class="subtitle" id="subtitleText">前面的路还很长，但我们已经在路上。</div>
+
+        <!-- cast panel -->
+        <div class="cast-panel" id="castPanel" hidden>
+          <div class="cp-head">
+            <span class="cp-title" id="cpTitle">投屏到设备</span>
+            <button class="cp-close" id="cpClose" title="关闭"><svg class="icon" style="width:13px;height:13px"><use href="#i-close"/></svg></button>
+          </div>
+
+          <!-- discover view -->
+          <div id="viewDiscover">
+            <div class="cp-body">
+              <div class="cp-hint">同一局域网内发现以下设备</div>
+              <div class="device" data-cast="客厅电视">
+                <div class="dev-ico"><svg class="icon" style="width:18px;height:18px"><use href="#i-tv"/></svg></div>
+                <div class="dev-meta"><div class="dev-name">客厅电视</div><div class="dev-sub">Android TV · 192.168.1.23 · DLNA</div></div>
+                <svg class="icon dev-arrow" style="width:14px;height:14px"><use href="#i-chev"/></svg>
+              </div>
+              <div class="device" data-cast="卧室盒子">
+                <div class="dev-ico"><svg class="icon" style="width:18px;height:18px"><use href="#i-box"/></svg></div>
+                <div class="dev-meta"><div class="dev-name">卧室盒子</div><div class="dev-sub">当贝盒子 · 192.168.1.31 · DLNA</div></div>
+                <svg class="icon dev-arrow" style="width:14px;height:14px"><use href="#i-chev"/></svg>
+              </div>
+              <div class="scanning"><i class="spin"></i>正在扫描更多设备…</div>
+              <div class="cp-div"></div>
+              <div class="manual"><svg class="icon" style="width:14px;height:14px"><use href="#i-plus"/></svg>手动输入 IP 地址（组播被隔离时）</div>
+            </div>
+            <div class="cp-foot">零安装：电视内置 DLNA 接收端；PC 端提供 HTTP 206 媒体服务。</div>
+          </div>
+
+          <!-- casting view -->
+          <div id="viewCasting" hidden>
+            <div class="connected">
+              <div class="conn-top">
+                <div class="conn-ico"><svg class="icon" style="width:20px;height:20px"><use href="#i-tv"/></svg></div>
+                <div><div class="conn-name" id="connName">客厅电视</div><div class="conn-state">● 已连接 · 电视端播放中</div></div>
+              </div>
+              <div class="conn-card">
+                <div class="conn-file" id="connFile">星际穿越.2014.2160p.mkv</div>
+                <div class="conn-track"><i></i></div>
+                <div class="conn-time"><span>00:42:18</span><span>01:48:32</span></div>
+              </div>
+              <p class="conn-note">画面由电视直接向 PC 拉取，PC 现在作为遥控器使用：可继续浏览播放列表、拖动进度或切换下一集。</p>
+              <button class="disconnect" id="disconnect">断开投屏，回到本地播放</button>
+            </div>
+            <div class="cp-foot">投屏进度与状态经 DLNA GetPositionInfo 轮询同步。</div>
+          </div>
+        </div>
+
+        <!-- on-screen controller -->
+        <div class="osc">
+          <div class="track" id="track">
+            <div class="buffer"></div><div class="played"></div><div class="knob"></div>
+            <div class="thumb">
+              <svg viewBox="0 0 110 62" preserveAspectRatio="xMidYMid slice">
+                <rect width="110" height="62" fill="#1b2942"/>
+                <circle cx="82" cy="16" r="6" fill="#ece6d6" opacity=".8"/>
+                <path d="M0 44 L18 36 L32 42 L48 30 L62 40 L80 33 L96 41 L110 36 L110 62 L0 62Z" fill="#111d31"/>
+              </svg>
+            </div>
+          </div>
+          <div class="osc-row">
+            <button class="obtn primary" id="playBtn" title="播放/暂停"><svg class="icon"><use id="playIcon" href="#i-play"/></svg></button>
+            <button class="obtn" title="上一个"><svg class="icon"><use href="#i-prev"/></svg></button>
+            <button class="obtn" title="下一个"><svg class="icon"><use href="#i-next"/></svg></button>
+            <button class="obtn" title="音量"><svg class="icon"><use href="#i-vol"/></svg></button>
+            <div class="time"><b id="curTime">00:42:18</b> <span>/ 01:48:32</span></div>
+            <div class="spacer"></div>
+            <button class="obtn chip" title="倍速">1.0×</button>
+            <button class="obtn" title="字幕"><svg class="icon"><use href="#i-cc"/></svg></button>
+            <button class="obtn" title="音轨"><svg class="icon"><use href="#i-audio"/></svg></button>
+            <button class="obtn" title="画中画"><svg class="icon"><use href="#i-pip"/></svg></button>
+            <button class="obtn" title="全屏"><svg class="icon"><use href="#i-full"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar" id="sidebar">
+        <div class="sb-head"><span class="sb-title">播放列表</span><span class="sb-count">5 个项目</span></div>
+        <div class="sb-list" id="sbList">
+          <div class="sb-item on"><div class="poster"><i></i></div><div class="sb-name">星际穿越.2014.2160p.mkv</div><div class="sb-dur">1:48:32</div></div>
+          <div class="sb-item"><div class="poster p2"><i></i></div><div class="sb-name">银翼杀手2049.2017.mkv</div><div class="sb-dur">2:43:51</div></div>
+          <div class="sb-item"><div class="poster p3"><i></i></div><div class="sb-name">降临.Arrival.2016.mp4</div><div class="sb-dur">1:56:04</div></div>
+          <div class="sb-item"><div class="poster p4"><i></i></div><div class="sb-name">沙丘.Dune.2021.mkv</div><div class="sb-dur">2:35:10</div></div>
+          <div class="sb-item"><div class="poster p5"><i></i></div><div class="sb-name">月球.Moon.2009.mp4</div><div class="sb-dur">1:37:18</div></div>
+        </div>
+        <div class="sb-foot">历史 / 断点续播由本地数据库持久化</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callouts">
+    <div class="callout"><div class="co-num">01 / 视频层</div><div class="co-title">原生渲染 surface</div><div class="co-desc">libmpv 直接输出到窗口，Vue 的透明 WebView 只覆盖 UI。MKV / HEVC / AV1 / HDR 不依赖系统 WebView 解码能力。</div></div>
+    <div class="callout"><div class="co-num">02 / 控制条</div><div class="co-title">悬浮 OSC</div><div class="co-desc">IINA 式底部渐显控制条，含缓冲进度、缩略图预览、字幕/音轨/倍速/逐帧。闲置自动隐藏，鼠标移入复现。</div></div>
+    <div class="callout"><div class="co-num">03 / 播放列表</div><div class="co-title">侧栏与媒体库</div><div class="co-desc">可折叠侧栏，Pinia 持有播放状态，播放历史与断点续播落本地数据库。控件走 Ant Design Vue 暗色 token。</div></div>
+    <div class="callout"><div class="co-num">04 / 投屏面板</div><div class="co-title">零安装设备发现</div><div class="co-desc">SSDP / mDNS 扫描 Android TV，手动 IP 作组播隔离兜底。连接后 PC 转为遥控器，显示电视端进度。</div></div>
+  </div>
+
+  <div class="foot">
+    <div><b>技术映射</b>　Vue 3 + Ant Design Vue + Pinia <code>→</code> Tauri 2.12 IPC <code>→</code> Rust（libmpv + vuio-core + axum HTTP 206） <code>→</code> Android TV</div>
+    <div>仅界面示意图 · 未建立工程、未编写业务代码</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var body = document.body;
+  var stateSeg = document.getElementById('stateSeg');
+  var platSeg = document.getElementById('platSeg');
+  var castPanel = document.getElementById('castPanel');
+  var viewDiscover = document.getElementById('viewDiscover');
+  var viewCasting = document.getElementById('viewCasting');
+  var cpTitle = document.getElementById('cpTitle');
+  var liveText = document.getElementById('liveText');
+  var subtitleText = document.getElementById('subtitleText');
+  var castBtn = document.getElementById('castBtn');
+  var listBtn = document.getElementById('listBtn');
+  var sidebar = document.getElementById('sidebar');
+  var playBtn = document.getElementById('playBtn');
+  var playIcon = document.getElementById('playIcon');
+  var track = document.getElementById('track');
+  var curTime = document.getElementById('curTime');
+  var winTitle = document.getElementById('winTitle');
+  var connFile = document.getElementById('connFile');
+  var connName = document.getElementById('connName');
+  var current = 'local';
+  var playing = false;
+
+  function fmt(sec){
+    var h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = Math.floor(sec%60);
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  }
+  function setProgress(p){
+    p = Math.max(0, Math.min(1, p));
+    document.documentElement.style.setProperty('--progress', (p*100).toFixed(2)+'%');
+    curTime.textContent = fmt(p*6500);
+  }
+  function setState(s){
+    current = s;
+    Array.prototype.forEach.call(stateSeg.children, function(b){ b.classList.toggle('on', b.dataset.state===s); });
+    if(s==='local'){
+      castPanel.hidden = true;
+      castBtn.classList.remove('active');
+      liveText.textContent = '本地播放 · libmpv';
+      subtitleText.style.display = '';
+    }else{
+      castPanel.hidden = false;
+      castBtn.classList.add('active');
+      viewDiscover.hidden = (s!=='discover');
+      viewCasting.hidden = (s!=='casting');
+      cpTitle.textContent = (s==='discover') ? '投屏到设备' : '正在投屏';
+      if(s==='casting'){
+        liveText.textContent = '投屏中 · 客厅电视';
+        subtitleText.style.display = 'none';
+      }else{
+        liveText.textContent = '本地播放 · libmpv';
+        subtitleText.style.display = '';
+      }
+    }
+  }
+  stateSeg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(b) setState(b.dataset.state);
+  });
+  platSeg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(platSeg.children, function(x){ x.classList.toggle('on', x===b); });
+    body.dataset.platform = b.dataset.plat;
+  });
+  castBtn.addEventListener('click', function(){ setState(current==='local' ? 'discover' : 'local'); });
+  document.getElementById('cpClose').addEventListener('click', function(){ setState('local'); });
+  document.getElementById('disconnect').addEventListener('click', function(){ setState('local'); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cast]'), function(d){
+    d.addEventListener('click', function(){
+      connName.textContent = d.dataset.cast;
+      liveText.textContent = '投屏中 · ' + d.dataset.cast;
+      setState('casting');
+    });
+  });
+  listBtn.addEventListener('click', function(){
+    sidebar.classList.toggle('hidden');
+    listBtn.classList.toggle('active', !sidebar.classList.contains('hidden'));
+  });
+  playBtn.addEventListener('click', function(){
+    playing = !playing;
+    playIcon.setAttribute('href', playing ? '#i-pause' : '#i-play');
+  });
+  track.addEventListener('click', function(e){
+    var r = track.getBoundingClientRect();
+    setProgress((e.clientX - r.left)/r.width);
+  });
+  document.getElementById('sbList').addEventListener('click', function(e){
+    var item = e.target.closest('.sb-item'); if(!item) return;
+    Array.prototype.forEach.call(this.children, function(x){ x.classList.remove('on'); });
+    item.classList.add('on');
+    var name = item.querySelector('.sb-name').textContent;
+    winTitle.textContent = name;
+    connFile.textContent = name;
+    setProgress(0);
+  });
+  setProgress(0.39);
+  setState('local');
+})();
+</script>
+</body>
+</html>
