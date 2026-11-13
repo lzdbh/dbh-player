@@ -21,6 +21,22 @@ ApplicationWindow {
             showMaximized()
     }
 
+    PlayerController {
+        id: playerController
+        onErrorOccurred: (message) => console.warn("Playback error:", message)
+    }
+
+    Component.onCompleted: {
+        if (initialFile !== "")
+            playerController.open(initialFile)
+    }
+
+    DlnaDeviceModel {
+        id: dlnaModel
+    }
+
+    property bool castPanelVisible: false
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -39,43 +55,24 @@ ApplicationWindow {
             WindowsTitleBar { window: root; title: root.title }
         }
 
-        // Content area: player view (Track A) and cast panel (Track B) plug in here from M1.
-        Item {
+        // Content area: player (Track A) + toggleable cast device panel (Track B).
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            spacing: 0
 
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 14
+            PlayerView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                player: playerController
+                onCastToggled: root.castPanelVisible = !root.castPanelVisible
+            }
 
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: AppContext.appName
-                    color: Theme.text
-                    font.pixelSize: 30
-                    font.family: Theme.fontFamily
-                    font.weight: Font.DemiBold
-                }
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "M0 skeleton ready · platform " + AppContext.platform + " · v" + AppContext.appVersion
-                    color: Theme.textSecondary
-                    font.pixelSize: 14
-                    font.family: Theme.fontFamily
-                }
-                Rectangle {
-                    Layout.alignment: Qt.AlignHCenter
-                    width: 220
-                    height: 1
-                    color: Theme.border
-                }
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: AppContext.isMac ? "macOS style shell" : "Windows style shell"
-                    color: Theme.accent
-                    font.pixelSize: 13
-                    font.family: Theme.fontFamily
-                }
+            DeviceList {
+                Layout.preferredWidth: 280
+                Layout.fillHeight: true
+                deviceModel: dlnaModel
+                visible: root.castPanelVisible
             }
         }
     }

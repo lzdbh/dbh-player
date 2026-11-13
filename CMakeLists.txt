@@ -8,8 +8,7 @@ project(dbhx-player
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# M0 only needs the UI stack. Multimedia / Network are added in M1.
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network)
 
 qt_standard_project_setup()
 
@@ -29,6 +28,12 @@ set_source_files_properties(qml/chrome/MacTitleBar.qml PROPERTIES
     QT_RESOURCE_ALIAS MacTitleBar.qml)
 set_source_files_properties(qml/chrome/WindowsTitleBar.qml PROPERTIES
     QT_RESOURCE_ALIAS WindowsTitleBar.qml)
+set_source_files_properties(qml/player/PlayerView.qml PROPERTIES
+    QT_RESOURCE_ALIAS PlayerView.qml)
+set_source_files_properties(qml/player/ControlBar.qml PROPERTIES
+    QT_RESOURCE_ALIAS ControlBar.qml)
+set_source_files_properties(qml/cast/DeviceList.qml PROPERTIES
+    QT_RESOURCE_ALIAS DeviceList.qml)
 
 qt_add_qml_module(dbhx-player
     URI Dbhx
@@ -38,9 +43,20 @@ qt_add_qml_module(dbhx-player
         qml/theme/Theme.qml
         qml/chrome/MacTitleBar.qml
         qml/chrome/WindowsTitleBar.qml
+        qml/player/PlayerView.qml
+        qml/player/ControlBar.qml
+        qml/cast/DeviceList.qml
     SOURCES
         src/app/AppContext.h
         src/app/AppContext.cpp
+        src/player/PlayerController.h
+        src/player/PlayerController.cpp
+        src/dlna/SsdpDiscovery.h
+        src/dlna/SsdpDiscovery.cpp
+        src/dlna/DeviceParser.h
+        src/dlna/DeviceParser.cpp
+        src/dlna/DlnaDeviceModel.h
+        src/dlna/DlnaDeviceModel.cpp
 )
 
 target_link_libraries(dbhx-player PRIVATE
@@ -48,12 +64,16 @@ target_link_libraries(dbhx-player PRIVATE
     Qt6::Gui
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Multimedia
+    Qt6::Network
 )
 
-# The generated QML type registration includes <AppContext.h> via __has_include,
-# so the header's directory must be on the include path.
+# The generated QML type registration includes each header via __has_include,
+# so the header directories must be on the include path.
 target_include_directories(dbhx-player PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/player
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dlna
 )
 
 set_target_properties(dbhx-player PROPERTIES
