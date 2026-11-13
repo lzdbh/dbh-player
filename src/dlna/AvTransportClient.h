@@ -15,7 +15,7 @@ public:
     void setControlUrl(const QUrl &url);
 
     void setUri(const QUrl &mediaUrl, const QString &title,
-                const QString &mimeType, qint64 sizeBytes);
+                const QString &mimeType, qint64 sizeBytes, bool live = false);
     void play();
     void pause();
     void stop();

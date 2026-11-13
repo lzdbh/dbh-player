@@ -70,6 +70,10 @@ qt_add_qml_module(dbhx-player
         src/dlna/MediaHttpServer.cpp
         src/dlna/CastManager.h
         src/dlna/CastManager.cpp
+        src/dlna/MediaProbe.h
+        src/dlna/MediaProbe.cpp
+        src/dlna/TranscodeSession.h
+        src/dlna/TranscodeSession.cpp
 )
 
 target_link_libraries(dbhx-player PRIVATE

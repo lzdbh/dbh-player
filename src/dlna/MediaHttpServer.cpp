@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QHostAddress>
 #include <QNetworkInterface>
+#include <QProcess>
 #include <QTcpSocket>
 
 namespace {
@@ -156,6 +157,92 @@ private:
     bool m_finished = false;
     QByteArray m_request;
 };
+
+// Streams a live transcode pipe to a single renderer: no Content-Length,
+// no Range (the TV cannot seek a live transcode), body ends at EOF.
+class LiveMediaConnection : public QObject
+{
+public:
+    LiveMediaConnection(QTcpSocket *socket, QIODevice *stream, const QString &mimeType,
+                        bool *busyFlag, QObject *parent)
+        : QObject(parent), m_socket(socket), m_stream(stream),
+          m_mimeType(mimeType), m_busyFlag(busyFlag)
+    {
+        connect(m_socket, &QTcpSocket::readyRead, this, [this]() { onRequestData(); });
+        connect(m_socket, &QTcpSocket::disconnected, this, [this]() {
+            *m_busyFlag = false;
+            deleteLater();
+        });
+    }
+
+private:
+    void onRequestData()
+    {
+        m_request += m_socket->readAll();
+        const qsizetype headerEnd = m_request.indexOf("\r\n\r\n");
+        if (headerEnd < 0) {
+            if (m_request.size() > kMaxRequestBytes)
+                m_socket->disconnectFromHost();
+            return;
+        }
+        const QList<QByteArray> parts = m_request.left(headerEnd).split('\n').first().trimmed().split(' ');
+        if (parts.size() < 2 || parts.at(1).split('?').first() != "/media"
+            || (parts.at(0) != "GET" && parts.at(0) != "HEAD")) {
+            m_socket->write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n"
+                            "Connection: close\r\n\r\n");
+            m_socket->disconnectFromHost();
+            return;
+        }
+        if (*m_busyFlag) {
+            m_socket->write("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\n"
+                            "Connection: close\r\n\r\n");
+            m_socket->disconnectFromHost();
+            return;
+        }
+        *m_busyFlag = true;
+
+        QByteArray header;
+        header += "HTTP/1.1 200 OK\r\n";
+        header += "Content-Type: " + m_mimeType.toUtf8() + "\r\n";
+        header += "transferMode.dlna.org: Streaming\r\n";
+        header += "realTimeInfo.dlna.org: DLNA.ORG_TLAG=*\r\n";
+        header += "Connection: close\r\n\r\n";
+        m_socket->write(header);
+
+        if (parts.at(0) == "HEAD") {
+            *m_busyFlag = false;
+            m_socket->disconnectFromHost();
+            return;
+        }
+
+        connect(m_stream, &QIODevice::readyRead, this, [this]() { pump(); });
+        connect(m_socket, &QTcpSocket::bytesWritten, this, [this]() { pump(); });
+        pump();
+    }
+
+    void pump()
+    {
+        while (m_socket->bytesToWrite() < kChunkSize && m_stream->bytesAvailable() > 0)
+            m_socket->write(m_stream->read(kChunkSize));
+        if (streamAtEnd() && m_socket->bytesToWrite() == 0)
+            m_socket->disconnectFromHost();
+    }
+
+    // QProcess::atEnd() is true whenever its read buffer is empty, even while
+    // running; only treat the stream as ended once the process has exited.
+    bool streamAtEnd() const
+    {
+        if (auto *process = qobject_cast<QProcess *>(m_stream))
+            return process->state() == QProcess::NotRunning && m_stream->bytesAvailable() == 0;
+        return m_stream->atEnd();
+    }
+
+    QTcpSocket *m_socket;
+    QIODevice *m_stream;
+    QString m_mimeType;
+    bool *m_busyFlag;
+    QByteArray m_request;
+};
 } // namespace
 
 MediaHttpServer::MediaHttpServer(QObject *parent)
@@ -181,6 +268,20 @@ bool MediaHttpServer::start(const QString &filePath)
     return true;
 }
 
+bool MediaHttpServer::startLive(QIODevice *stream, const QString &mimeType)
+{
+    stop();
+    if (!stream)
+        return false;
+    m_liveStream = stream;
+    m_mimeType = mimeType;
+    if (!listen(QHostAddress::AnyIPv4, 0)) {
+        m_liveStream = nullptr;
+        return false;
+    }
+    return true;
+}
+
 void MediaHttpServer::stop()
 {
     if (isListening())
@@ -190,6 +291,8 @@ void MediaHttpServer::stop()
         socket->abort();
     m_filePath.clear();
     m_fileSize = 0;
+    m_liveStream = nullptr;
+    m_liveBusy = false;
 }
 
 QUrl MediaHttpServer::mediaUrl() const
@@ -244,6 +347,11 @@ qint64 MediaHttpServer::fileSize() const
     return m_fileSize;
 }
 
+bool MediaHttpServer::isLive() const
+{
+    return m_liveStream != nullptr;
+}
+
 QString MediaHttpServer::mimeTypeForFile(const QString &filePath)
 {
     const QString suffix = QFileInfo(filePath).suffix().toLower();
@@ -275,5 +383,8 @@ void MediaHttpServer::incomingConnection(qintptr socketDescriptor)
         delete socket;
         return;
     }
-    new MediaConnection(socket, m_filePath, m_mimeType, m_fileSize, socket);
+    if (m_liveStream)
+        new LiveMediaConnection(socket, m_liveStream, m_mimeType, &m_liveBusy, socket);
+    else
+        new MediaConnection(socket, m_filePath, m_mimeType, m_fileSize, socket);
 }

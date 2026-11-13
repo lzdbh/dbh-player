@@ -2,7 +2,9 @@
 
 #include "AvTransportClient.h"
 #include "MediaHttpServer.h"
+#include "MediaProbe.h"
 #include "RenderingControlClient.h"
+#include "TranscodeSession.h"
 
 #include <QObject>
 #include <QTimer>
@@ -22,6 +24,7 @@ class CastManager : public QObject
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(int volume READ volume NOTIFY volumeChanged)
     Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+    Q_PROPERTY(bool transcoding READ transcoding NOTIFY transcodingChanged)
 
 public:
     explicit CastManager(QObject *parent = nullptr);
@@ -33,6 +36,7 @@ public:
     qint64 duration() const;
     int volume() const;
     QString status() const;
+    bool transcoding() const;
 
     Q_INVOKABLE void cast(const QUrl &avTransportUrl, const QUrl &renderingControlUrl,
                           const QString &deviceName, const QUrl &localFile);
@@ -51,6 +55,7 @@ signals:
     void durationChanged();
     void volumeChanged();
     void statusChanged();
+    void transcodingChanged();
     void castStarted();
     void castFailed(const QString &message);
 
@@ -58,18 +63,29 @@ private:
     void setActive(bool active);
     void setPlaying(bool playing);
     void setStatus(const QString &status);
+    void setTranscoding(bool transcoding);
     void fail(const QString &message);
+    void beginPush(const QUrl &mediaUrl, const QString &title,
+                   const QString &mimeType, qint64 sizeBytes, bool live);
 
     MediaHttpServer m_server;
     AvTransportClient m_avTransport;
     RenderingControlClient m_renderingControl;
+    MediaProbe m_probe;
+    TranscodeSession m_transcode;
     QTimer m_pollTimer;
 
     bool m_active = false;
     bool m_playing = false;
+    bool m_transcoding = false;
     QString m_deviceName;
     QString m_status;
     qint64 m_position = 0;
     qint64 m_duration = 0;
     int m_volume = 50;
+
+    // Pending cast request, kept while ffprobe runs.
+    QString m_pendingPath;
+    QUrl m_pendingAvt;
+    QUrl m_pendingRc;
 };

@@ -4,12 +4,15 @@ namespace {
 const QString kServiceType = QStringLiteral("urn:schemas-upnp-org:service:AVTransport:1");
 
 QString didlMetadata(const QUrl &mediaUrl, const QString &title,
-                     const QString &mimeType, qint64 sizeBytes)
+                     const QString &mimeType, qint64 sizeBytes, bool live)
 {
     const QString url = SoapClient::xmlEscape(mediaUrl.toString());
+    // OP=01: range/seek supported (file mode). OP=00: live transcode stream.
     const QString protocolInfo =
-        QStringLiteral("http-get:*:%1:DLNA.ORG_OP=01;DLNA.ORG_CI=0;"
-                       "DLNA.ORG_FLAGS=01700000000000000000000000000000").arg(mimeType);
+        QStringLiteral("http-get:*:%1:DLNA.ORG_OP=%2;DLNA.ORG_CI=%3;"
+                       "DLNA.ORG_FLAGS=01700000000000000000000000000000")
+            .arg(mimeType, live ? QStringLiteral("00") : QStringLiteral("01"),
+                 live ? QStringLiteral("1") : QStringLiteral("0"));
     QString didl;
     didl += QLatin1String("<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" "
                           "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" "
@@ -36,13 +39,13 @@ void AvTransportClient::setControlUrl(const QUrl &url)
 }
 
 void AvTransportClient::setUri(const QUrl &mediaUrl, const QString &title,
-                               const QString &mimeType, qint64 sizeBytes)
+                               const QString &mimeType, qint64 sizeBytes, bool live)
 {
     m_soap.sendAction(m_controlUrl, kServiceType, QStringLiteral("SetAVTransportURI"),
                       {{QStringLiteral("InstanceID"), QStringLiteral("0")},
                        {QStringLiteral("CurrentURI"), mediaUrl.toString()},
                        {QStringLiteral("CurrentURIMetaData"),
-                        didlMetadata(mediaUrl, title, mimeType, sizeBytes)}},
+                        didlMetadata(mediaUrl, title, mimeType, sizeBytes, live)}},
                       [this](bool ok, const SoapClient::Result &, const QString &error) {
                           if (ok)
                               emit uriSet();

@@ -16,7 +16,8 @@ CastManager::CastManager(QObject *parent)
             return;
         m_avTransport.play();
         setPlaying(true);
-        setStatus(QStringLiteral("Casting"));
+        setStatus(m_transcoding ? QStringLiteral("Casting (transcoded)")
+                                : QStringLiteral("Casting"));
         m_renderingControl.getVolume();
         m_pollTimer.start();
     });
@@ -67,6 +68,51 @@ CastManager::CastManager(QObject *parent)
                     emit volumeChanged();
                 }
             });
+
+    connect(&m_probe, &MediaProbe::probed, this, [this](const MediaProbe::Result &result) {
+        if (!m_active)
+            return;
+        if (!result.valid) {
+            fail(result.error);
+            return;
+        }
+        const QString title = QFileInfo(m_pendingPath).fileName();
+        if (result.directPushCompatible) {
+            if (!m_server.start(m_pendingPath)) {
+                fail(QStringLiteral("Cannot start local media server."));
+                return;
+            }
+            beginPush(m_server.mediaUrl(), title, m_server.mimeType(), m_server.fileSize(), false);
+        } else {
+            if (TranscodeSession::ffmpegPath().isEmpty()) {
+                fail(QStringLiteral("This format needs transcoding but ffmpeg was not found. "
+                                    "Install ffmpeg to cast %1 files.")
+                         .arg(result.formatName));
+                return;
+            }
+            setStatus(QStringLiteral("Transcoding for %1...").arg(m_deviceName));
+            if (!m_transcode.start(m_pendingPath)) {
+                fail(QStringLiteral("Cannot start ffmpeg transcode."));
+                return;
+            }
+            if (!m_server.startLive(m_transcode.stream(), QStringLiteral("video/mp2t"))) {
+                m_transcode.stop();
+                fail(QStringLiteral("Cannot start local media server."));
+                return;
+            }
+            setTranscoding(true);
+            if (result.durationMs > 0) {
+                m_duration = result.durationMs;
+                emit durationChanged();
+            }
+            beginPush(m_server.mediaUrl(), title, QStringLiteral("video/mp2t"), 0, true);
+        }
+    });
+
+    connect(&m_transcode, &TranscodeSession::errorOccurred, this, [this](const QString &message) {
+        if (m_active)
+            fail(message);
+    });
 }
 
 bool CastManager::active() const { return m_active; }
@@ -93,17 +139,9 @@ void CastManager::cast(const QUrl &avTransportUrl, const QUrl &renderingControlU
     if (m_active)
         disconnect();
 
-    if (!m_server.start(path)) {
-        emit castFailed(QStringLiteral("Cannot start local media server for %1").arg(path));
-        return;
-    }
-    const QUrl mediaUrl = m_server.mediaUrl();
-    if (!mediaUrl.isValid()) {
-        m_server.stop();
-        emit castFailed(QStringLiteral("No LAN IPv4 address found; is Wi-Fi connected?"));
-        return;
-    }
-
+    m_pendingPath = path;
+    m_pendingAvt = avTransportUrl;
+    m_pendingRc = renderingControlUrl;
     m_deviceName = deviceName;
     emit deviceNameChanged();
     m_position = 0;
@@ -115,10 +153,21 @@ void CastManager::cast(const QUrl &avTransportUrl, const QUrl &renderingControlU
     m_renderingControl.setControlUrl(renderingControlUrl);
 
     setActive(true);
-    setStatus(QStringLiteral("Connecting to %1...").arg(deviceName));
-    m_avTransport.setUri(mediaUrl, QFileInfo(path).fileName(),
-                         m_server.mimeType(), m_server.fileSize());
+    setStatus(QStringLiteral("Checking format..."));
+    m_probe.probe(path);
     emit castStarted();
+}
+
+void CastManager::beginPush(const QUrl &mediaUrl, const QString &title,
+                            const QString &mimeType, qint64 sizeBytes, bool live)
+{
+    if (!mediaUrl.isValid()) {
+        fail(QStringLiteral("No LAN IPv4 address found; is Wi-Fi connected?"));
+        return;
+    }
+    setStatus(m_transcoding ? QStringLiteral("Casting (transcoded)")
+                            : QStringLiteral("Connecting to %1...").arg(m_deviceName));
+    m_avTransport.setUri(mediaUrl, title, mimeType, sizeBytes, live);
 }
 
 void CastManager::play()
@@ -144,8 +193,8 @@ void CastManager::togglePlay()
 
 void CastManager::seek(qint64 positionMs)
 {
-    if (!m_active)
-        return;
+    if (!m_active || m_transcoding)
+        return; // live transcode stream cannot seek
     m_avTransport.seek(positionMs);
     m_position = positionMs;
     emit positionChanged();
@@ -167,6 +216,8 @@ void CastManager::disconnect()
     m_pollTimer.stop();
     m_avTransport.stop();
     m_server.stop();
+    m_transcode.stop();
+    setTranscoding(false);
     setPlaying(false);
     setActive(false);
     setStatus(QStringLiteral("Disconnected"));
@@ -200,8 +251,20 @@ void CastManager::fail(const QString &message)
 {
     m_pollTimer.stop();
     m_server.stop();
+    m_transcode.stop();
+    setTranscoding(false);
     setPlaying(false);
     setActive(false);
     setStatus(message);
     emit castFailed(message);
+}
+
+bool CastManager::transcoding() const { return m_transcoding; }
+
+void CastManager::setTranscoding(bool transcoding)
+{
+    if (m_transcoding == transcoding)
+        return;
+    m_transcoding = transcoding;
+    emit transcodingChanged();
 }
