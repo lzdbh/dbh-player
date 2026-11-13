@@ -1,8 +1,12 @@
 # Build directories
 build/
+build-release/
 out/
 cmake-build-*/
 CMakeUserPresets.json
+
+# Packaging output
+dist/
 
 # Local test media
 test/

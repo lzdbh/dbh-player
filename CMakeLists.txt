@@ -155,9 +155,16 @@ set_target_properties(dbhx-player PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Info.plist.in
     MACOSX_BUNDLE_GUI_IDENTIFIER com.dbhx.player
+    MACOSX_BUNDLE_ICON_FILE dbhx.icns
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
 )
+
+if(APPLE)
+    set_source_files_properties(cmake/dbhx.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(dbhx-player PRIVATE cmake/dbhx.icns)
+endif()
 
 install(TARGETS dbhx-player
     BUNDLE DESTINATION .

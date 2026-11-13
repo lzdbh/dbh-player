@@ -16,6 +16,8 @@
     <string>DBHX Player</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>dbhx.icns</string>
     <key>CFBundleShortVersionString</key>
     <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
     <key>CFBundleVersion</key>
@@ -28,5 +30,30 @@
     <true/>
     <key>NSLocalNetworkUsageDescription</key>
     <string>DBHX Player discovers DLNA TVs on your local network and streams video to them for casting.</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Video</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.mpeg-4</string>
+                <string>public.avi</string>
+                <string>com.apple.quicktime-movie</string>
+                <string>org.matroska.mkv</string>
+                <string>public.mpeg</string>
+                <string>org.webmproject.webm</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>mp4</string><string>m4v</string><string>mkv</string>
+                <string>avi</string><string>mov</string><string>flv</string>
+                <string>wmv</string><string>ts</string><string>webm</string>
+                <string>mpg</string><string>mpeg</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
