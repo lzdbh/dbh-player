@@ -1,0 +1,33 @@
+# Build directories
+build/
+out/
+cmake-build-*/
+CMakeUserPresets.json
+
+# Qt generated
+*.qmlc
+*.jsc
+*.qmltypes
+.qmlls.ini
+.qt/
+*_qml_module_deps.cpp
+
+# IDE
+.vscode/
+.idea/
+*.user
+CMakeLists.txt.user*
+
+# OS
+.DS_Store
+Thumbs.db
+*.stackdump
+
+# Binaries / packages
+*.exe
+*.dll
+*.so
+*.dylib
+*.app/
+*.dmg
+*.msix
