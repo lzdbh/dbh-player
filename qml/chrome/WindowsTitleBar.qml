@@ -34,9 +34,9 @@ Rectangle {
 
         Repeater {
             model: [
-                { "glyph": "\uE921", "act": "min", "hover": "#e9e9e9" },
-                { "glyph": "\uE922", "act": "max", "hover": "#e9e9e9" },
-                { "glyph": "\uE8BB", "act": "close", "hover": "#c42b1c" }
+                { "glyph": "\uE921", "act": "min", "hover": Theme.colorFillSecondary },
+                { "glyph": "\uE922", "act": "max", "hover": Theme.colorFillSecondary },
+                { "glyph": "\uE8BB", "act": "close", "hover": Theme.colorError }
             ]
             delegate: Rectangle {
                 required property var modelData

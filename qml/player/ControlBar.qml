@@ -2,16 +2,26 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+// Dark overlay control bar with Ant Design accents.
 Rectangle {
     id: root
 
     required property var player
+    property var playlist: null
+    property bool subtitleActive: false
+    property bool subtitleLoaded: false
+    property bool fullscreen: false
     readonly property bool hovered: barHover.hovered
 
     signal castToggled()
+    signal playlistToggled()
+    signal subtitleToggled()
+    signal subtitleLoadRequested()
+    signal screenshotRequested()
+    signal fullscreenToggled()
 
-    height: 72
-    color: "#d9000000"
+    height: 76
+    color: Theme.playerScrim
 
     function fmt(ms) {
         const s = Math.max(0, Math.floor(ms / 1000))
@@ -38,13 +48,15 @@ Rectangle {
 
             Text {
                 text: root.fmt(root.player.position)
-                color: "#ffffff"
-                font.pixelSize: 12
+                color: Theme.playerTextSecondary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
                 Layout.preferredWidth: 52
                 horizontalAlignment: Text.AlignRight
             }
-            Slider {
+            AntSlider {
                 id: seekSlider
+                dark: true
                 Layout.fillWidth: true
                 from: 0
                 to: Math.max(1, root.player.duration)
@@ -53,51 +65,139 @@ Rectangle {
             }
             Text {
                 text: root.fmt(root.player.duration)
-                color: "#ffffff"
-                font.pixelSize: 12
+                color: Theme.playerTextSecondary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
                 Layout.preferredWidth: 52
             }
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 2
 
-            Button {
-                text: root.player.playing ? "⏸" : "▶"
-                font.pixelSize: 16
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/prev.svg"
+                enabled: root.playlist && root.playlist.currentIndex > 0
+                onClicked: root.playlist.previous()
+                ToolTip.visible: hovered
+                ToolTip.text: "上一个"
+            }
+            AntIconButton {
+                iconSource: root.player.playing ? "qrc:/Dbhx/icons/pause.svg"
+                                                : "qrc:/Dbhx/icons/play.svg"
+                iconSize: 24
+                implicitWidth: 44
+                implicitHeight: 40
                 onClicked: root.player.togglePlay()
                 ToolTip.visible: hovered
-                ToolTip.text: root.player.playing ? "Pause" : "Play"
+                ToolTip.text: root.player.playing ? "暂停 (Space)" : "播放 (Space)"
             }
-            Button {
-                text: "⏹"
-                font.pixelSize: 16
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/stop.svg"
                 onClicked: root.player.stop()
                 ToolTip.visible: hovered
-                ToolTip.text: "Stop"
+                ToolTip.text: "停止"
             }
-            Button {
-                text: "📺"
-                font.pixelSize: 16
-                onClicked: root.castToggled()
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/next.svg"
+                enabled: root.playlist && root.playlist.currentIndex >= 0
+                         && root.playlist.currentIndex < root.playlist.count - 1
+                onClicked: root.playlist.next()
                 ToolTip.visible: hovered
-                ToolTip.text: "Cast to device"
+                ToolTip.text: "下一个"
+            }
+
+            Item { Layout.preferredWidth: 8 }
+
+            // Playback rate
+            AntButton {
+                id: rateButton
+                variant: "text"
+                small: true
+                dark: true
+                Layout.preferredWidth: 52
+                text: root.player.playbackRate.toFixed(2).replace(/\.?0+$/, "") + "x"
+                onClicked: rateMenu.popup(rateButton, 0, -rateMenu.height - 4)
+                ToolTip.visible: hovered
+                ToolTip.text: "倍速"
+
+                AntMenu {
+                    id: rateMenu
+                    Repeater {
+                        model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+                        AntMenuItem {
+                            required property var modelData
+                            text: modelData + "x"
+                            checkable: true
+                            checked: Math.abs(root.player.playbackRate - modelData) < 0.01
+                            onTriggered: root.player.playbackRate = modelData
+                        }
+                    }
+                }
             }
 
             Item { Layout.fillWidth: true }
 
-            Text {
-                text: "🔊"
-                font.pixelSize: 14
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/subtitle.svg"
+                iconColor: root.subtitleActive ? Theme.colorPrimary : "#ffffff"
+                opacity: root.subtitleLoaded ? 1 : 0.5
+                onClicked: root.subtitleLoaded ? root.subtitleToggled()
+                                               : root.subtitleLoadRequested()
+                ToolTip.visible: hovered
+                ToolTip.text: root.subtitleLoaded ? "字幕开关" : "加载字幕 (SRT)"
             }
-            Slider {
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/camera.svg"
+                onClicked: root.screenshotRequested()
+                ToolTip.visible: hovered
+                ToolTip.text: "截图"
+            }
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/playlist.svg"
+                onClicked: root.playlistToggled()
+                ToolTip.visible: hovered
+                ToolTip.text: "播放列表"
+            }
+            AntIconButton {
+                iconSource: "qrc:/Dbhx/icons/cast.svg"
+                onClicked: root.castToggled()
+                ToolTip.visible: hovered
+                ToolTip.text: "投屏到设备"
+            }
+
+            Item { Layout.preferredWidth: 8 }
+
+            AntIconButton {
+                iconSource: root.player.muted || root.player.volume === 0
+                            ? "qrc:/Dbhx/icons/mute.svg"
+                            : "qrc:/Dbhx/icons/volume.svg"
+                onClicked: root.player.muted = !root.player.muted
+                ToolTip.visible: hovered
+                ToolTip.text: root.player.muted ? "取消静音 (M)" : "静音 (M)"
+            }
+            AntSlider {
                 id: volumeSlider
-                Layout.preferredWidth: 110
+                dark: true
+                Layout.preferredWidth: 90
                 from: 0
                 to: 1
-                value: root.player.volume
-                onMoved: root.player.volume = value
+                value: root.player.muted ? 0 : root.player.volume
+                onMoved: {
+                    root.player.muted = false
+                    root.player.volume = value
+                }
+            }
+
+            Item { Layout.preferredWidth: 8 }
+
+            AntIconButton {
+                iconSource: root.fullscreen ? "qrc:/Dbhx/icons/fullscreen-exit.svg"
+                                            : "qrc:/Dbhx/icons/fullscreen.svg"
+                onClicked: root.fullscreenToggled()
+                ToolTip.visible: hovered
+                ToolTip.text: root.fullscreen ? "退出全屏 (F)" : "全屏 (F)"
             }
         }
     }

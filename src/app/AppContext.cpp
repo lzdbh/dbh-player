@@ -1,6 +1,7 @@
 #include "AppContext.h"
 
 #include <QCoreApplication>
+#include <QStandardPaths>
 #include <QtGlobal>
 
 AppContext::AppContext(QObject *parent)
@@ -40,4 +41,9 @@ QString AppContext::appName() const
 QString AppContext::appVersion() const
 {
     return QCoreApplication::applicationVersion();
+}
+
+QString AppContext::picturesDir() const
+{
+    return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 }

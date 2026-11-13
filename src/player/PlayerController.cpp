@@ -21,6 +21,11 @@ void PlayerController::ensurePlayer()
     connect(m_player, &QMediaPlayer::durationChanged, this, &PlayerController::durationChanged);
     connect(m_player, &QMediaPlayer::hasVideoChanged, this, &PlayerController::hasVideoChanged);
     connect(m_audio, &QAudioOutput::volumeChanged, this, &PlayerController::volumeChanged);
+    connect(m_audio, &QAudioOutput::mutedChanged, this, &PlayerController::mutedChanged);
+    connect(m_player, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
+        if (status == QMediaPlayer::EndOfMedia)
+            emit endOfMedia();
+    });
     connect(m_player, &QMediaPlayer::errorOccurred, this,
             [this](QMediaPlayer::Error, const QString &message) { emit errorOccurred(message); });
 
@@ -77,6 +82,17 @@ void PlayerController::setVolume(float volume)
     m_volume = volume;
     if (m_audio)
         m_audio->setVolume(volume);
+}
+
+bool PlayerController::muted() const
+{
+    return m_audio && m_audio->isMuted();
+}
+
+void PlayerController::setMuted(bool muted)
+{
+    ensurePlayer();
+    m_audio->setMuted(muted);
 }
 
 float PlayerController::playbackRate() const

@@ -8,13 +8,35 @@ Item {
     id: root
 
     required property var player
+    property var playlist: null
+    property var subtitles: null
     property bool controlsVisible: true
+    property bool subtitleVisible: true
+    property bool fullscreen: false
 
     signal castToggled()
+    signal playlistToggled()
+    signal fullscreenToggled()
+    signal toastRequested(string message, string tone)
 
     function showControls() {
         controlsVisible = true
         hideTimer.restart()
+    }
+
+    function takeScreenshot() {
+        if (root.player.source.toString() === "") {
+            root.toastRequested("没有正在播放的视频", "error")
+            return
+        }
+        videoSurface.grabToImage(function(result) {
+            const stamp = Qt.formatDateTime(new Date(), "yyyyMMdd-hhmmss")
+            const path = AppContext.picturesDir() + "/DBHX-" + stamp + ".png"
+            if (result.saveToFile(path))
+                root.toastRequested("截图已保存到 " + path, "success")
+            else
+                root.toastRequested("截图保存失败", "error")
+        })
     }
 
     VideoOutput {
@@ -34,8 +56,12 @@ Item {
     DropArea {
         anchors.fill: parent
         onDropped: (drop) => {
-            if (drop.hasUrls)
-                root.player.open(drop.urls[0])
+            if (drop.hasUrls) {
+                if (root.playlist)
+                    root.playlist.addUrls(drop.urls)
+                else
+                    root.player.open(drop.urls[0])
+            }
         }
     }
 
@@ -46,10 +72,11 @@ Item {
         hoverEnabled: true
         onClicked: (mouse) => {
             if (mouse.button === Qt.RightButton)
-                contextMenu.popup()
+                contextMenu.popup(mouse.x, mouse.y)
             else
                 root.player.togglePlay()
         }
+        onDoubleClicked: root.fullscreenToggled()
         onPositionChanged: root.showControls()
         onEntered: root.showControls()
     }
@@ -60,28 +87,62 @@ Item {
         spacing: 16
         visible: root.player.source.toString() === ""
 
-        Text {
+        Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            text: "🎬"
-            font.pixelSize: 48
+            width: 88
+            height: 88
+            radius: 44
+            color: Theme.colorPrimaryBg
+
+            ColorIcon {
+                anchors.centerIn: parent
+                iconSize: 40
+                source: "qrc:/Dbhx/icons/play.svg"
+                iconColor: Theme.colorPrimary
+            }
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "Drag a video here, or open a file"
-            color: Theme.textSecondary
+            text: "拖入视频，或打开文件开始播放"
+            color: Theme.colorTextSecondary
             font.pixelSize: 15
             font.family: Theme.fontFamily
         }
-        Button {
+        AntButton {
             Layout.alignment: Qt.AlignHCenter
-            text: "Open File"
+            variant: "primary"
+            text: "打开文件"
             onClicked: fileDialog.open()
         }
+    }
+
+    // Subtitle overlay above the control bar.
+    Text {
+        id: subtitleText
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: root.controlsVisible ? 96 : 32
+        width: parent.width * 0.85
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.Wrap
+        color: "#ffffff"
+        style: Text.Outline
+        styleColor: "#c0000000"
+        font.pixelSize: Math.max(18, Math.round(parent.height / 28))
+        font.family: Theme.fontFamily
+        visible: root.subtitleVisible && root.subtitles && root.subtitles.loaded
+        text: visible ? root.subtitles.textAt(root.player.position) : ""
+
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: 150 } }
     }
 
     ControlBar {
         id: controlBar
         player: root.player
+        playlist: root.playlist
+        subtitleLoaded: root.subtitles && root.subtitles.loaded
+        subtitleActive: root.subtitleVisible && root.subtitles && root.subtitles.loaded
+        fullscreen: root.fullscreen
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -89,38 +150,97 @@ Item {
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
         onCastToggled: root.castToggled()
+        onPlaylistToggled: root.playlistToggled()
+        onSubtitleToggled: root.subtitleVisible = !root.subtitleVisible
+        onSubtitleLoadRequested: subtitleDialog.open()
+        onScreenshotRequested: root.takeScreenshot()
+        onFullscreenToggled: root.fullscreenToggled()
     }
 
-    Menu {
+    AntMenu {
         id: contextMenu
-        MenuItem {
-            text: "Open File..."
+        AntMenuItem {
+            text: "打开文件..."
             onTriggered: fileDialog.open()
         }
+        AntMenuItem {
+            text: "加载字幕 (SRT)..."
+            onTriggered: subtitleDialog.open()
+        }
+        AntMenuItem {
+            text: "关闭字幕"
+            enabled: root.subtitles && root.subtitles.loaded
+            onTriggered: root.subtitles.unload()
+        }
         MenuSeparator {}
-        MenuItem {
-            text: root.player.playing ? "Pause" : "Play"
+        AntMenuItem {
+            text: root.player.playing ? "暂停" : "播放"
             onTriggered: root.player.togglePlay()
         }
-        MenuItem {
-            text: "Stop"
+        AntMenuItem {
+            text: "停止"
             onTriggered: root.player.stop()
         }
+        AntMenu {
+            title: "倍速"
+            Repeater {
+                model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+                AntMenuItem {
+                    required property var modelData
+                    text: modelData + "x"
+                    checkable: true
+                    checked: Math.abs(root.player.playbackRate - modelData) < 0.01
+                    onTriggered: root.player.playbackRate = modelData
+                }
+            }
+        }
         MenuSeparator {}
-        MenuItem {
-            text: "Cast to Device"
+        AntMenuItem {
+            text: "截图"
+            onTriggered: root.takeScreenshot()
+        }
+        AntMenuItem {
+            text: "播放列表"
+            onTriggered: root.playlistToggled()
+        }
+        AntMenuItem {
+            text: "投屏到设备"
             onTriggered: root.castToggled()
+        }
+        AntMenuItem {
+            text: root.fullscreen ? "退出全屏" : "全屏"
+            onTriggered: root.fullscreenToggled()
         }
     }
 
     FileDialog {
         id: fileDialog
-        title: "Open Video"
+        title: "打开视频"
+        fileMode: FileDialog.OpenFiles
         nameFilters: [
-            "Video files (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)",
-            "All files (*)"
+            "视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)",
+            "所有文件 (*)"
         ]
-        onAccepted: root.player.open(selectedFile)
+        onAccepted: {
+            if (root.playlist)
+                root.playlist.addUrls(selectedFiles)
+            else if (selectedFiles.length > 0)
+                root.player.open(selectedFiles[0])
+        }
+    }
+
+    FileDialog {
+        id: subtitleDialog
+        title: "加载字幕"
+        nameFilters: ["SRT 字幕 (*.srt)", "所有文件 (*)"]
+        onAccepted: {
+            if (root.subtitles && root.subtitles.load(selectedFile)) {
+                root.subtitleVisible = true
+                root.toastRequested("字幕已加载: " + root.subtitles.fileName, "success")
+            } else {
+                root.toastRequested("字幕加载失败（仅支持 SRT）", "error")
+            }
+        }
     }
 
     Timer {

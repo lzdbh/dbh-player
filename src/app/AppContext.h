@@ -27,6 +27,8 @@ public:
     QString appName() const;
     QString appVersion() const;
 
+    Q_INVOKABLE QString picturesDir() const;
+
 private:
     QString m_platform;
 };

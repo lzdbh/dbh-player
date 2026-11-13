@@ -20,6 +20,7 @@ class PlayerController : public QObject
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(float volume READ volume WRITE setVolume NOTIFY volumeChanged)
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(float playbackRate READ playbackRate WRITE setPlaybackRate NOTIFY playbackRateChanged)
     Q_PROPERTY(bool hasVideo READ hasVideo NOTIFY hasVideoChanged)
 
@@ -34,6 +35,8 @@ public:
     qint64 duration() const;
     float volume() const;
     void setVolume(float volume);
+    bool muted() const;
+    void setMuted(bool muted);
     float playbackRate() const;
     void setPlaybackRate(float rate);
     bool hasVideo() const;
@@ -52,6 +55,8 @@ signals:
     void positionChanged();
     void durationChanged();
     void volumeChanged();
+    void mutedChanged();
+    void endOfMedia();
     void playbackRateChanged();
     void hasVideoChanged();
     void errorOccurred(const QString &message);

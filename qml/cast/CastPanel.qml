@@ -2,12 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+// Ant Design style remote-control panel shown while casting.
 Rectangle {
     id: root
 
     required property var castManager
 
-    color: Theme.windowBg
+    color: Theme.colorBgContainer
 
     function fmt(ms) {
         const s = Math.max(0, Math.floor(ms / 1000))
@@ -21,44 +22,72 @@ Rectangle {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 10
+        spacing: 12
 
         RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
             Text {
-                text: "Casting"
-                color: Theme.text
-                font.pixelSize: 15
+                text: "投屏中"
+                color: Theme.colorText
+                font.pixelSize: Theme.fontSizeLG
                 font.family: Theme.fontFamily
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
             }
-            Button {
-                text: "Disconnect"
+            AntButton {
+                variant: "danger"
+                small: true
+                text: "断开"
                 onClicked: root.castManager.disconnect()
             }
         }
 
-        Text {
+        Rectangle {
             Layout.fillWidth: true
-            text: "📺 " + root.castManager.deviceName
-            color: Theme.text
-            font.pixelSize: 13
-            font.family: Theme.fontFamily
-            elide: Text.ElideRight
+            implicitHeight: deviceRow.implicitHeight + 20
+            radius: Theme.radiusLG
+            color: Theme.colorPrimaryBg
+            border.width: 1
+            border.color: Theme.colorPrimaryBorder
+
+            RowLayout {
+                id: deviceRow
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
+
+                ColorIcon {
+                    iconSize: 20
+                    source: "qrc:/Dbhx/icons/cast.svg"
+                    iconColor: Theme.colorPrimary
+                }
+                Text {
+                    text: root.castManager.deviceName
+                    color: Theme.colorText
+                    font.pixelSize: Theme.fontSize
+                    font.family: Theme.fontFamily
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                AntTag {
+                    visible: root.castManager.transcoding
+                    text: "转码中"
+                    tone: "processing"
+                }
+            }
         }
 
         Text {
             Layout.fillWidth: true
             text: root.castManager.status
-            color: Theme.textSecondary
-            font.pixelSize: 11
+            color: Theme.colorTextTertiary
+            font.pixelSize: Theme.fontSizeSM
+            font.family: Theme.fontFamily
             wrapMode: Text.WordWrap
         }
-
-        Item { Layout.preferredHeight: 8 }
 
         RowLayout {
             Layout.fillWidth: true
@@ -66,57 +95,58 @@ Rectangle {
 
             Text {
                 text: root.fmt(root.castManager.position)
-                color: Theme.text
-                font.pixelSize: 11
+                color: Theme.colorTextSecondary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
                 Layout.preferredWidth: 44
                 horizontalAlignment: Text.AlignRight
             }
-            Slider {
+            AntSlider {
                 Layout.fillWidth: true
                 from: 0
                 to: Math.max(1, root.castManager.duration)
                 value: root.castManager.position
+                enabled: !root.castManager.transcoding
                 onMoved: root.castManager.seek(value)
+                ToolTip.visible: hovered && root.castManager.transcoding
+                ToolTip.text: "转码流不支持拖动进度"
             }
             Text {
                 text: root.fmt(root.castManager.duration)
-                color: Theme.text
-                font.pixelSize: 11
+                color: Theme.colorTextSecondary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
                 Layout.preferredWidth: 44
             }
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 8
 
-            Button {
-                text: root.castManager.playing ? "⏸" : "▶"
-                font.pixelSize: 16
+            AntButton {
+                variant: "primary"
+                text: root.castManager.playing ? "⏸ 暂停" : "▶ 播放"
+                Layout.fillWidth: true
                 onClicked: root.castManager.togglePlay()
-                ToolTip.visible: hovered
-                ToolTip.text: root.castManager.playing ? "Pause on TV" : "Play on TV"
             }
-            Button {
-                text: "⏹"
-                font.pixelSize: 16
+            AntButton {
+                text: "停止投屏"
+                Layout.fillWidth: true
                 onClicked: root.castManager.disconnect()
-                ToolTip.visible: hovered
-                ToolTip.text: "Stop casting"
             }
-
-            Item { Layout.fillWidth: true }
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 8
 
-            Text {
-                text: "🔊"
-                font.pixelSize: 14
+            ColorIcon {
+                iconSize: 16
+                source: "qrc:/Dbhx/icons/volume.svg"
+                iconColor: Theme.colorTextSecondary
             }
-            Slider {
+            AntSlider {
                 Layout.fillWidth: true
                 from: 0
                 to: 100
@@ -126,21 +156,32 @@ Rectangle {
             }
             Text {
                 text: root.castManager.volume + "%"
-                color: Theme.textSecondary
-                font.pixelSize: 11
-                Layout.preferredWidth: 36
+                color: Theme.colorTextSecondary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
+                Layout.preferredWidth: 38
                 horizontalAlignment: Text.AlignRight
             }
         }
 
         Item { Layout.fillHeight: true }
 
-        Text {
+        Rectangle {
             Layout.fillWidth: true
-            text: "The TV pulls the stream from this computer. Keep the app running and on the same Wi-Fi."
-            color: Theme.textSecondary
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
+            implicitHeight: hint.implicitHeight + 16
+            radius: Theme.radius
+            color: Theme.colorFillTertiary
+
+            Text {
+                id: hint
+                anchors.fill: parent
+                anchors.margins: 8
+                text: "电视直接从本机拉流播放。请保持应用运行、电脑与电视在同一 Wi-Fi。"
+                color: Theme.colorTextTertiary
+                font.pixelSize: Theme.fontSizeSM
+                font.family: Theme.fontFamily
+                wrapMode: Text.WordWrap
+            }
         }
     }
 }

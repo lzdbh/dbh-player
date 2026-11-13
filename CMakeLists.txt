@@ -8,7 +8,7 @@ project(dbhx-player
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network Widgets)
 
 qt_standard_project_setup()
 
@@ -36,6 +36,47 @@ set_source_files_properties(qml/cast/DeviceList.qml PROPERTIES
     QT_RESOURCE_ALIAS DeviceList.qml)
 set_source_files_properties(qml/cast/CastPanel.qml PROPERTIES
     QT_RESOURCE_ALIAS CastPanel.qml)
+set_source_files_properties(qml/player/PlaylistPanel.qml PROPERTIES
+    QT_RESOURCE_ALIAS PlaylistPanel.qml)
+set_source_files_properties(qml/controls/AntButton.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntButton.qml)
+set_source_files_properties(qml/controls/AntSlider.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntSlider.qml)
+set_source_files_properties(qml/controls/AntTag.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntTag.qml)
+set_source_files_properties(qml/controls/AntIconButton.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntIconButton.qml)
+set_source_files_properties(qml/controls/ColorIcon.qml PROPERTIES
+    QT_RESOURCE_ALIAS ColorIcon.qml)
+set_source_files_properties(qml/controls/Toast.qml PROPERTIES
+    QT_RESOURCE_ALIAS Toast.qml)
+set_source_files_properties(qml/controls/AntMenu.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntMenu.qml)
+set_source_files_properties(qml/controls/AntMenuItem.qml PROPERTIES
+    QT_RESOURCE_ALIAS AntMenuItem.qml)
+
+# Outline SVG icons (white, colorized in QML), kept under icons/ in the module.
+set(ICON_FILES
+    qml/icons/play.svg
+    qml/icons/pause.svg
+    qml/icons/stop.svg
+    qml/icons/cast.svg
+    qml/icons/volume.svg
+    qml/icons/mute.svg
+    qml/icons/playlist.svg
+    qml/icons/camera.svg
+    qml/icons/folder.svg
+    qml/icons/next.svg
+    qml/icons/prev.svg
+    qml/icons/fullscreen.svg
+    qml/icons/fullscreen-exit.svg
+    qml/icons/subtitle.svg
+    qml/icons/close.svg
+)
+foreach(icon ${ICON_FILES})
+    get_filename_component(name ${icon} NAME)
+    set_source_files_properties(${icon} PROPERTIES QT_RESOURCE_ALIAS icons/${name})
+endforeach()
 
 qt_add_qml_module(dbhx-player
     URI Dbhx
@@ -49,11 +90,26 @@ qt_add_qml_module(dbhx-player
         qml/player/ControlBar.qml
         qml/cast/DeviceList.qml
         qml/cast/CastPanel.qml
+        qml/player/PlaylistPanel.qml
+        qml/controls/AntButton.qml
+        qml/controls/AntSlider.qml
+        qml/controls/AntTag.qml
+        qml/controls/AntIconButton.qml
+        qml/controls/ColorIcon.qml
+        qml/controls/Toast.qml
+        qml/controls/AntMenu.qml
+        qml/controls/AntMenuItem.qml
+    RESOURCES
+        ${ICON_FILES}
     SOURCES
         src/app/AppContext.h
         src/app/AppContext.cpp
         src/player/PlayerController.h
         src/player/PlayerController.cpp
+        src/player/PlaylistController.h
+        src/player/PlaylistController.cpp
+        src/player/SubtitleTrack.h
+        src/player/SubtitleTrack.cpp
         src/dlna/SsdpDiscovery.h
         src/dlna/SsdpDiscovery.cpp
         src/dlna/DeviceParser.h
@@ -83,6 +139,7 @@ target_link_libraries(dbhx-player PRIVATE
     Qt6::QuickControls2
     Qt6::Multimedia
     Qt6::Network
+    Qt6::Widgets
 )
 
 # The generated QML type registration includes each header via __has_include,
