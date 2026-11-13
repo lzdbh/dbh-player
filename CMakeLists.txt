@@ -34,6 +34,8 @@ set_source_files_properties(qml/player/ControlBar.qml PROPERTIES
     QT_RESOURCE_ALIAS ControlBar.qml)
 set_source_files_properties(qml/cast/DeviceList.qml PROPERTIES
     QT_RESOURCE_ALIAS DeviceList.qml)
+set_source_files_properties(qml/cast/CastPanel.qml PROPERTIES
+    QT_RESOURCE_ALIAS CastPanel.qml)
 
 qt_add_qml_module(dbhx-player
     URI Dbhx
@@ -46,6 +48,7 @@ qt_add_qml_module(dbhx-player
         qml/player/PlayerView.qml
         qml/player/ControlBar.qml
         qml/cast/DeviceList.qml
+        qml/cast/CastPanel.qml
     SOURCES
         src/app/AppContext.h
         src/app/AppContext.cpp
@@ -57,6 +60,16 @@ qt_add_qml_module(dbhx-player
         src/dlna/DeviceParser.cpp
         src/dlna/DlnaDeviceModel.h
         src/dlna/DlnaDeviceModel.cpp
+        src/dlna/SoapClient.h
+        src/dlna/SoapClient.cpp
+        src/dlna/AvTransportClient.h
+        src/dlna/AvTransportClient.cpp
+        src/dlna/RenderingControlClient.h
+        src/dlna/RenderingControlClient.cpp
+        src/dlna/MediaHttpServer.h
+        src/dlna/MediaHttpServer.cpp
+        src/dlna/CastManager.h
+        src/dlna/CastManager.cpp
 )
 
 target_link_libraries(dbhx-player PRIVATE
@@ -79,6 +92,8 @@ target_include_directories(dbhx-player PRIVATE
 set_target_properties(dbhx-player PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Info.plist.in
+    MACOSX_BUNDLE_GUI_IDENTIFIER com.dbhx.player
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
 )
@@ -87,3 +102,12 @@ install(TARGETS dbhx-player
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin
 )
+
+# macOS blocks local network (SSDP/multicast) sends from unsigned binaries
+# with EHOSTUNREACH; ad-hoc sign every build so DLNA discovery works.
+if(APPLE)
+    add_custom_command(TARGET dbhx-player POST_BUILD
+        COMMAND codesign --force -s - --identifier com.dbhx.player
+                $<TARGET_BUNDLE_DIR:dbhx-player>
+        COMMENT "Ad-hoc signing dbhx-player.app")
+endif()

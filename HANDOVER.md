@@ -1,8 +1,8 @@
 # dbhx-player 工作交接文档
 
-> 最后更新：2026-11-13
+> 最后更新：2026-11-13（macOS 接手完成）
 > 用途：回家在 **macOS 与 Windows** 上继续实施。本文档自包含，按 §5 配环境、§6 构建即可接手。
-> 当前里程碑：**M0 已提交并推送；M1 代码完成（未提交，待验收）**。
+> 当前里程碑：**M0/M1 已提交推送；M2 代码完成，已在真实电视（央视频投屏助手/RockChip）直推验收通过**。
 
 ---
 
@@ -36,9 +36,9 @@
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | **M0** | 工程骨架：CMake+Qt6、无边框窗口、分平台标题栏、AppContext、Theme | ✅ 完成，**已提交+推送** `1206ff8` |
-| **M1** | 播放器核心（Track A）+ DLNA 设备发现（Track B） | ✅ 代码完成、本地播放已验证、WMF 稳定（20 次 0 崩溃）；**未提交**；DLNA 发现待真实电视验收 |
-| **M2** | DLNA 直推投屏链路（本机 HTTP + SOAP + 投屏面板） | ⬜ 待做（**下一步**，见 §9） |
-| **M3** | ffmpeg 转码兜底 | ⬜ 待做 |
+| **M1** | 播放器核心（Track A）+ DLNA 设备发现（Track B） | ✅ 完成，**已提交+推送** `61ed0eb`；macOS 播放/发现均已验证 |
+| **M2** | DLNA 直推投屏链路（本机 HTTP + SOAP + 投屏面板） | ✅ 完成，**真实电视直推验收通过**（播放/进度/时长/音量/停止；暂停经模拟渲染器验证） |
+| **M3** | ffmpeg 转码兜底 | ⬜ 待做（**下一步**） |
 | **M4** | 播放体验 + 分平台 UI 打磨（播放列表/字幕/倍速/截图/快捷键/托盘） | ⬜ 待做 |
 | **M5** | 四目标打包、签名、公证、发布 | ⬜ 待做 |
 | **M6** | 加固与优化（容错/性能/日志/崩溃上报/i18n/测试） | ⬜ 可选 |
@@ -57,13 +57,19 @@ dbhx-player/
 │   └── dlna/
 │       ├── SsdpDiscovery.{h,cpp}    # SSDP 组播发现 MediaRenderer
 │       ├── DeviceParser.{h,cpp}     # 解析设备描述 XML（friendlyName/控制地址）
-│       └── DlnaDeviceModel.{h,cpp}  # 设备列表模型（QAbstractListModel，暴露 QML）
+│       ├── DlnaDeviceModel.{h,cpp}  # 设备列表模型（QAbstractListModel，暴露 QML）
+│       ├── SoapClient.{h,cpp}       # UPnP SOAP 通用客户端（M2）
+│       ├── AvTransportClient.{h,cpp}    # SetAVTransportURI/Play/Pause/Stop/Seek/GetPositionInfo（M2）
+│       ├── RenderingControlClient.{h,cpp} # SetVolume/GetVolume/SetMute（M2）
+│       ├── MediaHttpServer.{h,cpp}  # 本机 HTTP 媒体服务，支持 Range（M2）
+│       └── CastManager.{h,cpp}      # 投屏编排 + 状态轮询，暴露 QML（M2）
+├── cmake/Info.plist.in         # macOS bundle 模板（含 NSLocalNetworkUsageDescription，见坑#9）
 └── qml/
-    ├── Main.qml                # 主窗口；PlayerController + DlnaDeviceModel 实例
+    ├── Main.qml                # 主窗口；PlayerController + DlnaDeviceModel + CastManager 实例
     ├── theme/Theme.qml         # 单例：分平台设计令牌（颜色/字体/圆角）
     ├── chrome/{WindowsTitleBar,MacTitleBar}.qml  # 两套标题栏
     ├── player/{PlayerView,ControlBar}.qml        # 播放视图 + 控制条（右键菜单内联在 PlayerView）
-    └── cast/DeviceList.qml     # 投屏设备面板（Scan + 列表）
+    └── cast/{DeviceList,CastPanel}.qml  # 设备面板（Scan+点击投屏）+ 投屏中远程播控面板
 ```
 
 > 约定：`player/` 是播放抽象层，`dlna/` 是投屏层，二者通过 QML（Main.qml）组合。M2 的 CastManager 将放在 `dlna/`。
@@ -102,14 +108,18 @@ dbhx-player/
    ```
    > 若 ffmpeg 报缺 `libz-1.dll`：`pacman -S mingw-w64-x86_64-zlib`（需 1.4+）。
 
-### 5.2 macOS（回家新配）
+### 5.2 macOS（本机已配好：Intel x86_64 + macOS 26）
 
-1. **Xcode Command Line Tools**（clang）：`xcode-select --install`
-2. **Qt 6.12 LTS**（二选一）：
-   - **官方在线安装器**（推荐，精确 6.12 LTS，macOS universal 含 arm64+x86_64）：qt.io 下载，登录 Qt 账号，勾选 `Qt 6.12 LTS → macOS` + `Qt Multimedia` + Developer Tools（CMake/Ninja）。
-   - 或 Homebrew：`brew install qt cmake ninja`（版本随 brew，可能非 6.12）。
-3. **后端说明**：macOS 默认用 FFmpeg 后端（官方构建，**无 Windows 那个崩溃问题**）。`main.cpp` 的 WMF 设置仅在 `Q_OS_WIN` 生效，Mac 不受影响。若 Mac 遇问题可试 `QT_MEDIA_BACKEND=darwin`（AVFoundation）。
-4. arm64 / x86_64：Qt macOS kit 是 universal；构建时用 `CMAKE_OSX_ARCHITECTURES="arm64;x86_64"` 出通用二进制。
+**本机实际安装方式**（brew 在此机不可行，见坑#10）：
+- **cmake / ninja / aqtinstall**：`python3 -m pip install --user -i https://pypi.tuna.tsinghua.edu.cn/simple cmake ninja aqtinstall`
+  → 二进制在 `~/Library/Python/3.9/bin`（**不在 PATH**，构建前 export）。
+- **Qt 6.12.0**：`aqt install-qt mac desktop 6.12.0 clang_64 -m qtmultimedia qtshadertools --outputdir ~/Qt --base https://mirror.nju.edu.cn/qt`
+  → 装在 `~/Qt/6.12.0/macos`（universal 二进制）。清华源 qtbase 校验和不一致（坑#10），**用 NJU 源**。
+- Xcode / CLT 已装（clang）；ffmpeg 已有（`/usr/local/bin/ffmpeg`）。
+
+**新 Mac 复现**：同上两条命令即可；或官方在线安装器（需 Qt 账号）。arm64 机器同样适用（clang_64 是 universal）。
+
+**后端说明**：macOS 默认 FFmpeg 后端（官方构建为 **LGPL**，无 Windows 那个崩溃问题）。`main.cpp` 的 WMF 设置仅在 `Q_OS_WIN` 生效。若遇问题可试 `QT_MEDIA_BACKEND=darwin`（AVFoundation）。
 
 ## 6. 构建与运行
 
@@ -124,16 +134,16 @@ cmake --build build
 > 在 Git Bash 里也可：`MSYSTEM=MINGW64 C:/msys64/usr/bin/bash.exe -lc "cd /e/my-git/dbhx-player && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build"`
 > 运行时需 `/mingw64/bin` 在 PATH（MINGW64 shell 自动满足）。
 
-### macOS
+### macOS（本机已验证）
 ```bash
-cd ~/path/to/dbhx-player
-# Qt 官方安装器路径示例：~/Qt/6.12.0/macos；brew 则用 $(brew --prefix qt)
+cd ~/my-git/dbh-player
+export PATH="$HOME/Library/Python/3.9/bin:$PATH"   # pip 装的 cmake/ninja
 cmake -S . -B build -G Ninja \
-  -DCMAKE_PREFIX_PATH=~/Qt/6.12.0/macos \
+  -DCMAKE_PREFIX_PATH=$HOME/Qt/6.12.0/macos \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-cmake --build build
-open build/dbhx-player.app
+  -DCMAKE_OSX_ARCHITECTURES=x86_64        # Intel 本机；M5 发布改 "arm64;x86_64"
+cmake --build build                        # 末尾自动 ad-hoc 签名（坑#9，必需）
+open build/dbhx-player.app --args /path/video.mp4
 ```
 
 ### 生成测试视频（任意平台，需 ffmpeg）
@@ -153,6 +163,9 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 6. **播放器惰性创建**：`PlayerController::ensurePlayer()` 首次 open/play 才创建 QMediaPlayer，避开启动期初始化竞态。属性 getter 均处理 null。
 7. **ffmpeg 依赖 zlib 1.4**（`libz-1.dll`）；旧 zlib 1.3 只有 `zlib1.dll`，需升级。
 8. **分平台 UI**：`AppContext.isMac/isWindows` 判断；`Theme.qml` 提供令牌；标题栏在 `chrome/`。新增 UI 记得两套皮肤都顾及。
+9. **macOS 未签名二进制发不出组播**：sendto 组播返回 `EHOSTUNREACH`（errno 65，"No route to host"），SSDP 静默失败、Scan 无设备。**ad-hoc 签名即解决**（CMake 已加 POST_BUILD `codesign --force -s -`，勿删）；Info.plist 需含 `NSLocalNetworkUsageDescription`（模板在 `cmake/Info.plist.in`）。排查时可用 raw sendto C 程序看 errno 区分权限/路由。
+10. **macOS 装 Qt 别用 brew/清华源**：本机（Intel + macOS 26）brew 无 bottle 会源码编译（Qt 要数小时）；清华 Qt 镜像 qtbase 校验和多次不一致（同步中多节点内容不同）；**NJU 源 `mirror.nju.edu.cn/qt` 校验一致且快**；官方 download.qt.io 极慢（~10KB/s）。pip 用清华源正常。
+11. **QByteArray::startsWith 无大小写忽略重载**（Qt6.12）：用 `trimmed.toLower().startsWith("range:")`。
 
 ## 8. DLNA 投屏架构
 
@@ -164,29 +177,26 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 5. **转码兜底**（M3）：电视不兼容的格式（MKV/HEVC/DTS）用 ffmpeg 实时转 H.264+AAC 的 MPEG-TS 再喂。
 
 **已实现（M1）**：步骤 1、2 + 设备列表 UI（`dlna/` + `cast/DeviceList.qml`）。
-**待实现（M2）**：步骤 3、4 + 投屏编排 + 远程播控面板。
+**已实现（M2）**：步骤 3、4 + 投屏编排 + 远程播控面板（`MediaHttpServer`/`SoapClient`/`AvTransportClient`/`RenderingControlClient`/`CastManager` + `cast/CastPanel.qml`）。
 
-## 9. 下一步：M2 详细任务（直推投屏链路）
+## 9. M2 完成记录与下一步（M3）
 
-在 `src/dlna/` 新增：
-- [ ] **MediaHttpServer**：`QTcpServer`（或 QtHttpServer）本机 HTTP，**支持 Range**，暴露当前播放文件；探测本机局域网 IP。
-- [ ] **AvTransportClient**：SOAP 客户端（QNetworkAccessManager POST XML），实现 `SetAVTransportURI / Play / Pause / Stop / Seek / GetPositionInfo`。
-- [ ] **RenderingControlClient**：SOAP `SetVolume / GetVolume / SetMute`。
-- [ ] **CastManager**：编排「选设备 → 起 HTTP → SetAVTransportURI → Play」，暴露 QML；管理投屏状态。
-- [ ] **投屏面板 UI**：设备点击投屏、投屏中远程播控（播放/暂停/进度/音量/停止）。
-- [ ] CMake 加新源码 + include；QML 接入。
+**M2 已完成并验收（2026-11-13，macOS + 真实电视「央视频电视投屏助手」）**：
+- [x] MediaHttpServer：Range 全量/区间/suffix/416/HEAD 均经 curl 逐字节校验；DLNA Streaming 头；LAN IP 优选 en* 物理接口。
+- [x] AvTransportClient / RenderingControlClient / SoapClient（含 DIDL-Lite 元数据、SOAP Fault 解析）。
+- [x] CastManager：cast→SetAVTransportURI→Play→1s 轮询 GetPositionInfo/GetTransportInfo；电视端 STOPPED 自动断开。
+- [x] 投屏面板：设备点击投屏、CastPanel 远程播放/暂停/进度/音量/断开；castFailed 错误横幅。
+- [x] 验收：真实电视直推 MP4/H.264 播放完整 5s，远程进度/时长/音量（70%）回读正确，远程 Play 生效；模拟渲染器端到端 11 项断言全过（含 Pause/Seek/SetVolume）；20 次启动 0 崩溃。
 
-**M2 验收**：MP4/H.264 能直推电视播放，PC 端可远程播放/暂停/进度/音量。
-**提示**：SOAP action 头 `SOAPAction: "urn:schemas-upnp-org:service:AVTransport:1#Play"`；controlURL 已在 DeviceParser 解析好（`avTransport` role）。
+**下一步 M3（ffmpeg 转码兜底）**：电视不兼容格式（MKV/HEVC/DTS）实时转 H.264+AAC MPEG-TS。注意 §12：需选 **LGPL ffmpeg 构建**（macOS 官方 Qt 自带 FFmpeg 已是 LGPL；Windows MSYS2 ffmpeg 是 GPL 需替换）。转码流由 MediaHttpServer 以 chunked 方式喂给电视（无 Content-Length，需处理电视不支持 chunked 的情况）。
 
 ## 10. Git 状态与跨机同步
 
 - **remote**：`origin = https://github.com/lzdbh/dbh-player.git`，`main` 跟踪 `origin/main`。
-- **M0**：已提交并推送（`1206ff8`）。
-- **M1**：**未提交**（工作区改动：`CMakeLists.txt`、`Main.qml`、`main.cpp` + 新增 `player/`、`dlna/`、`cast/`）。
-- **回家前**：验收 M1 后 `git add` 相关文件 → `git commit` → `git push`。
+- **M0/M1**：已提交并推送（`1206ff8`、`61ed0eb`）。
+- **M2**：macOS 端完成并验收，提交记录见 git log。
 - **回家后**：`git pull` → 按 §5 配环境 → §6 构建。
-- ⚠️ **网络**：github.com 在你的网络下需 **Steam++ 加速**（并加 revoke 豁免）才通；push/pull 前确认加速开启。
+- ⚠️ **网络**：github.com 在你的网络下需 **Steam++ 加速**（并加 revoke 豁免）才通；push/pull 前确认加速开启。macOS 本机 pip 走清华源、Qt 走 NJU 源（坑#10）。
 - **提交约定**：`feat:`/`fix:` 前缀；**UI 改动先验收再提交**。
 
 ## 11. 测试与验证
@@ -196,7 +206,8 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
   c=0; for i in $(seq 1 20); do timeout 4 ./build/dbhx-player.exe >/dev/null 2>&1; [ $? -eq 139 ] && c=$((c+1)); done; echo "crashes=$c/20"
   ```
 - **播放确证**：命令行传测试视频，开 `QT_FORCE_STDERR_LOGGING=1`，确认 duration/position 推进（WMF 不打 FFmpeg 那种日志，可临时在 QML 加 `onPositionChanged` 打印）。
-- **DLNA 发现**：电视与电脑同 Wi-Fi 并开启 → 控制条 **📺 → Scan** → 应列出设备。
+- **DLNA 发现**：电视与电脑同 Wi-Fi 并开启 → 控制条 **📺 → Scan** → 应列出设备。macOS 若 Scan 无设备先查坑#9（签名）。
+- **投屏**：Scan 后点击设备 → 电视应播放当前打开的视频，侧栏变为 CastPanel 远程播控。
 
 ## 12. 许可证注意（M5 发布前处理）
 
@@ -206,14 +217,15 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 
 ---
 
-## 附：当前未提交改动清单（M1）
+## 附：M2 改动清单（2026-11-13，macOS）
 
 ```
- M CMakeLists.txt        # +Multimedia/Network、player/dlna 源码、DeviceList.qml、include
- M qml/Main.qml          # +PlayerController/DlnaDeviceModel、RowLayout 播放器+设备侧栏
- M src/main.cpp          # +Windows WMF 默认后端、命令行打开文件
-?? qml/player/           # PlayerView.qml, ControlBar.qml
-?? qml/cast/             # DeviceList.qml
-?? src/player/           # PlayerController.{h,cpp}
-?? src/dlna/             # SsdpDiscovery/DeviceParser/DlnaDeviceModel.{h,cpp}
+ M CMakeLists.txt        # +M2 源码/CastPanel.qml、macOS Info.plist 模板、POST_BUILD ad-hoc 签名
+ M qml/Main.qml          # +CastManager、CastPanel、castFailed 错误横幅
+ M qml/cast/DeviceList.qml   # 设备点击 → castManager.cast(...)
+ M qml/player/PlayerView.qml # 右键 Cast to Device 启用
+ M .gitignore            # +test/（本地测试视频）
+?? cmake/Info.plist.in   # NSLocalNetworkUsageDescription
+?? qml/cast/CastPanel.qml
+?? src/dlna/{SoapClient,AvTransportClient,RenderingControlClient,MediaHttpServer,CastManager}.{h,cpp}
 ```

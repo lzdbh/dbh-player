@@ -109,7 +109,7 @@ Item {
         MenuSeparator {}
         MenuItem {
             text: "Cast to Device"
-            enabled: false   // wired up in M2
+            onTriggered: root.castToggled()
         }
     }
 

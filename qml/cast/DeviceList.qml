@@ -6,6 +6,8 @@ Rectangle {
     id: root
 
     required property var deviceModel
+    required property var castManager
+    property url mediaSource
 
     color: Theme.windowBg
 
@@ -84,7 +86,11 @@ Rectangle {
                     id: delegateMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    // Casting itself is wired up in M2.
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.castManager.cast(model.avTransport,
+                                                     model.renderingControl,
+                                                     model.name,
+                                                     root.mediaSource)
                 }
             }
 

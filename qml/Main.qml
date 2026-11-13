@@ -35,6 +35,19 @@ ApplicationWindow {
         id: dlnaModel
     }
 
+    CastManager {
+        id: castManager
+        onCastStarted: {
+            playerController.pause()
+            root.castPanelVisible = true
+        }
+        onCastFailed: (message) => {
+            castErrorBanner.text = message
+            castErrorBanner.visible = true
+            castErrorTimer.restart()
+        }
+    }
+
     property bool castPanelVisible: false
 
     ColumnLayout {
@@ -72,8 +85,45 @@ ApplicationWindow {
                 Layout.preferredWidth: 280
                 Layout.fillHeight: true
                 deviceModel: dlnaModel
-                visible: root.castPanelVisible
+                castManager: castManager
+                mediaSource: playerController.source
+                visible: root.castPanelVisible && !castManager.active
             }
+
+            CastPanel {
+                Layout.preferredWidth: 280
+                Layout.fillHeight: true
+                castManager: castManager
+                visible: castManager.active
+            }
+        }
+    }
+
+    Rectangle {
+        id: castErrorBanner
+        property alias text: castErrorText.text
+        anchors.top: parent.top
+        anchors.topMargin: 48
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.min(parent.width - 40, castErrorText.implicitWidth + 32)
+        height: castErrorText.implicitHeight + 16
+        radius: Theme.cornerRadius
+        color: "#e05545"
+        visible: false
+        z: 10
+
+        Text {
+            id: castErrorText
+            anchors.centerIn: parent
+            color: "#ffffff"
+            font.pixelSize: 12
+            font.family: Theme.fontFamily
+        }
+
+        Timer {
+            id: castErrorTimer
+            interval: 5000
+            onTriggered: castErrorBanner.visible = false
         }
     }
 
