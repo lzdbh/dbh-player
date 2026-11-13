@@ -13,13 +13,16 @@ void PlayerController::ensurePlayer()
     m_player = new QMediaPlayer(this);
     m_audio = new QAudioOutput(this);
     m_audio->setVolume(m_volume);
+    m_audio->setMuted(m_muted);
     m_player->setAudioOutput(m_audio);
+    m_player->setPlaybackRate(m_rate);
 
     connect(m_player, &QMediaPlayer::playbackStateChanged, this,
             [this](QMediaPlayer::PlaybackState) { emit playingChanged(); });
     connect(m_player, &QMediaPlayer::positionChanged, this, &PlayerController::positionChanged);
     connect(m_player, &QMediaPlayer::durationChanged, this, &PlayerController::durationChanged);
     connect(m_player, &QMediaPlayer::hasVideoChanged, this, &PlayerController::hasVideoChanged);
+    connect(m_player, &QMediaPlayer::playbackRateChanged, this, &PlayerController::playbackRateChanged);
     connect(m_audio, &QAudioOutput::volumeChanged, this, &PlayerController::volumeChanged);
     connect(m_audio, &QAudioOutput::mutedChanged, this, &PlayerController::mutedChanged);
     connect(m_player, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
@@ -86,24 +89,28 @@ void PlayerController::setVolume(float volume)
 
 bool PlayerController::muted() const
 {
-    return m_audio && m_audio->isMuted();
+    return m_audio ? m_audio->isMuted() : m_muted;
 }
 
 void PlayerController::setMuted(bool muted)
 {
-    ensurePlayer();
-    m_audio->setMuted(muted);
+    m_muted = muted;
+    if (m_audio)
+        m_audio->setMuted(muted);
 }
 
 float PlayerController::playbackRate() const
 {
-    return m_player ? m_player->playbackRate() : 1.0f;
+    return m_player ? m_player->playbackRate() : m_rate;
 }
 
 void PlayerController::setPlaybackRate(float rate)
 {
+    m_rate = rate;
     if (m_player)
         m_player->setPlaybackRate(rate);
+    else
+        emit playbackRateChanged();
 }
 
 bool PlayerController::hasVideo() const

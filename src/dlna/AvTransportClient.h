@@ -23,6 +23,9 @@ public:
     void getPositionInfo();
     void getTransportInfo();
 
+    static QString formatTime(qint64 ms);
+    static qint64 parseTime(const QString &hhmmss);
+
 signals:
     void uriSet();
     void positionInfoReceived(qint64 positionMs, qint64 durationMs);
@@ -30,9 +33,6 @@ signals:
     void actionFailed(const QString &action, const QString &error);
 
 private:
-    static QString formatTime(qint64 ms);
-    static qint64 parseTime(const QString &hhmmss);
-
     SoapClient m_soap;
     QUrl m_controlUrl;
 };

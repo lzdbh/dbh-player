@@ -26,16 +26,16 @@ Item {
 
     function takeScreenshot() {
         if (root.player.source.toString() === "") {
-            root.toastRequested("没有正在播放的视频", "error")
+            root.toastRequested(qsTr("没有正在播放的视频"), "error")
             return
         }
         videoSurface.grabToImage(function(result) {
             const stamp = Qt.formatDateTime(new Date(), "yyyyMMdd-hhmmss")
             const path = AppContext.picturesDir() + "/DBHX-" + stamp + ".png"
             if (result.saveToFile(path))
-                root.toastRequested("截图已保存到 " + path, "success")
+                root.toastRequested(qsTr("截图已保存到 ") + path, "success")
             else
-                root.toastRequested("截图保存失败", "error")
+                root.toastRequested(qsTr("截图保存失败"), "error")
         })
     }
 
@@ -103,7 +103,7 @@ Item {
         }
         Text {
             Layout.alignment: Qt.AlignHCenter
-            text: "拖入视频，或打开文件开始播放"
+            text: qsTr("拖入视频，或打开文件开始播放")
             color: Theme.colorTextSecondary
             font.pixelSize: 15
             font.family: Theme.fontFamily
@@ -111,7 +111,7 @@ Item {
         AntButton {
             Layout.alignment: Qt.AlignHCenter
             variant: "primary"
-            text: "打开文件"
+            text: qsTr("打开文件")
             onClicked: fileDialog.open()
         }
     }
@@ -160,29 +160,29 @@ Item {
     AntMenu {
         id: contextMenu
         AntMenuItem {
-            text: "打开文件..."
+            text: qsTr("打开文件...")
             onTriggered: fileDialog.open()
         }
         AntMenuItem {
-            text: "加载字幕 (SRT)..."
+            text: qsTr("加载字幕 (SRT)...")
             onTriggered: subtitleDialog.open()
         }
         AntMenuItem {
-            text: "关闭字幕"
+            text: qsTr("关闭字幕")
             enabled: root.subtitles && root.subtitles.loaded
             onTriggered: root.subtitles.unload()
         }
         MenuSeparator {}
         AntMenuItem {
-            text: root.player.playing ? "暂停" : "播放"
+            text: root.player.playing ? qsTr("暂停") : qsTr("播放")
             onTriggered: root.player.togglePlay()
         }
         AntMenuItem {
-            text: "停止"
+            text: qsTr("停止")
             onTriggered: root.player.stop()
         }
         AntMenu {
-            title: "倍速"
+            title: qsTr("倍速")
             Repeater {
                 model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
                 AntMenuItem {
@@ -196,30 +196,30 @@ Item {
         }
         MenuSeparator {}
         AntMenuItem {
-            text: "截图"
+            text: qsTr("截图")
             onTriggered: root.takeScreenshot()
         }
         AntMenuItem {
-            text: "播放列表"
+            text: qsTr("播放列表")
             onTriggered: root.playlistToggled()
         }
         AntMenuItem {
-            text: "投屏到设备"
+            text: qsTr("投屏到设备")
             onTriggered: root.castToggled()
         }
         AntMenuItem {
-            text: root.fullscreen ? "退出全屏" : "全屏"
+            text: root.fullscreen ? qsTr("退出全屏") : qsTr("全屏")
             onTriggered: root.fullscreenToggled()
         }
     }
 
     FileDialog {
         id: fileDialog
-        title: "打开视频"
+        title: qsTr("打开视频")
         fileMode: FileDialog.OpenFiles
         nameFilters: [
-            "视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)",
-            "所有文件 (*)"
+            qsTr("视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)"),
+            qsTr("所有文件 (*)")
         ]
         onAccepted: {
             if (root.playlist)
@@ -231,14 +231,14 @@ Item {
 
     FileDialog {
         id: subtitleDialog
-        title: "加载字幕"
-        nameFilters: ["SRT 字幕 (*.srt)", "所有文件 (*)"]
+        title: qsTr("加载字幕")
+        nameFilters: [qsTr("SRT 字幕 (*.srt)"), qsTr("所有文件 (*)")]
         onAccepted: {
             if (root.subtitles && root.subtitles.load(selectedFile)) {
                 root.subtitleVisible = true
-                root.toastRequested("字幕已加载: " + root.subtitles.fileName, "success")
+                root.toastRequested(qsTr("字幕已加载: ") + root.subtitles.fileName, "success")
             } else {
-                root.toastRequested("字幕加载失败（仅支持 SRT）", "error")
+                root.toastRequested(qsTr("字幕加载失败（仅支持 SRT）"), "error")
             }
         }
     }

@@ -45,12 +45,12 @@ ApplicationWindow {
     PlayerController {
         id: playerController
         objectName: "playerController"
-        onErrorOccurred: (message) => toast.show("播放错误: " + message, "error")
+        onErrorOccurred: (message) => toast.show(qsTr("播放错误: ") + message, "error")
         onEndOfMedia: playlist.onMediaEnded()
         onSourceChanged: {
             subtitles.unload()
             if (source.toString() !== "" && subtitles.autoLoadFor(source))
-                toast.show("已自动加载字幕: " + subtitles.fileName, "success")
+                toast.show(qsTr("已自动加载字幕: ") + subtitles.fileName, "success")
         }
     }
 
@@ -64,8 +64,44 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        playerController.volume = AppContext.loadSetting("player/volume", 1.0)
+        playerController.muted = AppContext.loadSetting("player/muted", false)
+        playerController.playbackRate = AppContext.loadSetting("player/rate", 1.0)
+        const geo = AppContext.loadSetting("window/geometry", "")
+        if (geo !== "") {
+            const p = geo.split(",")
+            if (p.length === 4) {
+                root.x = parseInt(p[0]); root.y = parseInt(p[1])
+                root.width = parseInt(p[2]); root.height = parseInt(p[3])
+            }
+        }
         if (initialFiles.length > 0)
             playlist.addUrls(initialFiles)
+    }
+
+    onClosing: {
+        AppContext.saveSetting("player/volume", playerController.volume)
+        AppContext.saveSetting("player/muted", playerController.muted)
+        AppContext.saveSetting("player/rate", playerController.playbackRate)
+        AppContext.saveSetting("window/geometry",
+                               root.x + "," + root.y + "," + root.width + "," + root.height)
+    }
+
+    Timer {
+        id: settingsTimer
+        interval: 800
+        onTriggered: {
+            AppContext.saveSetting("player/volume", playerController.volume)
+            AppContext.saveSetting("player/muted", playerController.muted)
+            AppContext.saveSetting("player/rate", playerController.playbackRate)
+        }
+    }
+
+    Connections {
+        target: playerController
+        function onVolumeChanged() { settingsTimer.restart() }
+        function onMutedChanged() { settingsTimer.restart() }
+        function onPlaybackRateChanged() { settingsTimer.restart() }
     }
 
     DlnaDeviceModel {
@@ -190,11 +226,11 @@ ApplicationWindow {
 
     FileDialog {
         id: openShortcutDialog
-        title: "打开视频"
+        title: qsTr("打开视频")
         fileMode: FileDialog.OpenFiles
         nameFilters: [
-            "视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)",
-            "所有文件 (*)"
+            qsTr("视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)"),
+            qsTr("所有文件 (*)")
         ]
         onAccepted: playlist.addUrls(selectedFiles)
     }

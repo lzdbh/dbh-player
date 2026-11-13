@@ -8,7 +8,7 @@ project(dbhx-player
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network Widgets Core5Compat LinguistTools)
 
 qt_standard_project_setup()
 
@@ -104,6 +104,8 @@ qt_add_qml_module(dbhx-player
     SOURCES
         src/app/AppContext.h
         src/app/AppContext.cpp
+        src/app/Logging.h
+        src/app/Logging.cpp
         src/player/PlayerController.h
         src/player/PlayerController.cpp
         src/player/PlaylistController.h
@@ -140,6 +142,7 @@ target_link_libraries(dbhx-player PRIVATE
     Qt6::Multimedia
     Qt6::Network
     Qt6::Widgets
+    Qt6::Core5Compat
 )
 
 # The generated QML type registration includes each header via __has_include,
@@ -169,6 +172,16 @@ endif()
 install(TARGETS dbhx-player
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin
+)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
+# UI source language is Chinese; provide an English translation.
+qt_add_translations(dbhx-player
+    TS_FILES translations/dbhx_en.ts
 )
 
 # macOS blocks local network (SSDP/multicast) sends from unsigned binaries

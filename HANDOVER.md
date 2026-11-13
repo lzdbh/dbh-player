@@ -1,8 +1,8 @@
 # dbhx-player 工作交接文档
 
-> 最后更新：2026-11-13（macOS 接手完成）
+> 最后更新：2026-11-14（macOS 夜间实施 M3–M6 完成）
 > 用途：回家在 **macOS 与 Windows** 上继续实施。本文档自包含，按 §5 配环境、§6 构建即可接手。
-> 当前里程碑：**M0/M1 已提交推送；M2 代码完成，已在真实电视（央视频投屏助手/RockChip）直推验收通过**。
+> 当前里程碑：**M0–M6 全部完成（macOS 端）**；M2 经真实电视直推验收，M3–M6 经模拟渲染器/单元测试/UI 自动化验证。Windows 端待回归。
 
 ---
 
@@ -38,10 +38,10 @@
 | **M0** | 工程骨架：CMake+Qt6、无边框窗口、分平台标题栏、AppContext、Theme | ✅ 完成，**已提交+推送** `1206ff8` |
 | **M1** | 播放器核心（Track A）+ DLNA 设备发现（Track B） | ✅ 完成，**已提交+推送** `61ed0eb`；macOS 播放/发现均已验证 |
 | **M2** | DLNA 直推投屏链路（本机 HTTP + SOAP + 投屏面板） | ✅ 完成，**真实电视直推验收通过**（播放/进度/时长/音量/停止；暂停经模拟渲染器验证） |
-| **M3** | ffmpeg 转码兜底 | ⬜ 待做（**下一步**） |
-| **M4** | 播放体验 + 分平台 UI 打磨（播放列表/字幕/倍速/截图/快捷键/托盘） | ⬜ 待做 |
-| **M5** | 四目标打包、签名、公证、发布 | ⬜ 待做 |
-| **M6** | 加固与优化（容错/性能/日志/崩溃上报/i18n/测试） | ⬜ 可选 |
+| **M3** | ffmpeg 转码兜底 | ✅ 完成（ffprobe 探测 + videotoolbox/libx264 → MPEG-TS 直播流；模拟渲染器验证 TS 字节流） |
+| **M4** | 播放体验 + 分平台 UI 打磨（播放列表/字幕/倍速/截图/快捷键/托盘） | ✅ 完成，**UI 全面改为 Ant Design v5 风格**（中文文案，英文翻译随系统语言切换） |
+| **M5** | 四目标打包、签名、公证、发布 | ✅ macOS 未签名 universal .app/.dmg 已出并验证；Windows 脚本备好待跑；签名/公证留待有证书（用户决策：未签名包+本地验证） |
+| **M6** | 加固与优化（容错/性能/日志/崩溃上报/i18n/测试） | ✅ 完成（日志轮转、QSettings 持久化、qsTr+i18n、11 项单元测试、轮询容错；崩溃上报未做） |
 
 ## 4. 代码结构
 
@@ -51,9 +51,12 @@ dbhx-player/
 ├── .gitignore / .clang-format
 ├── HANDOVER.md                 # 本文档
 ├── src/
-│   ├── main.cpp                # 入口；Windows 默认 WMF 后端；命令行打开文件
-│   ├── app/AppContext.{h,cpp}  # QML 单例：平台判断 + 应用元信息
-│   ├── player/PlayerController.{h,cpp}  # 播放引擎封装（惰性创建 QMediaPlayer）
+│   ├── main.cpp                # 入口（QApplication+托盘）；Windows 默认 WMF；多文件命令行；i18n 加载
+│   ├── app/AppContext.{h,cpp}  # QML 单例：平台判断 + 应用元信息 + QSettings 读写
+│   ├── app/Logging.{h,cpp}     # 日志分类 + 文件轮转（M6）
+│   ├── player/PlayerController.{h,cpp}  # 播放引擎封装（惰性创建；音量/静音/倍速持久化友好）
+│   ├── player/PlaylistController.{h,cpp} # 播放列表模型 + 自动连播（M4）
+│   ├── player/SubtitleTrack.{h,cpp}     # SRT 解析/定位（UTF-8/UTF-16/GB18030）（M4）
 │   └── dlna/
 │       ├── SsdpDiscovery.{h,cpp}    # SSDP 组播发现 MediaRenderer
 │       ├── DeviceParser.{h,cpp}     # 解析设备描述 XML（friendlyName/控制地址）
@@ -61,15 +64,24 @@ dbhx-player/
 │       ├── SoapClient.{h,cpp}       # UPnP SOAP 通用客户端（M2）
 │       ├── AvTransportClient.{h,cpp}    # SetAVTransportURI/Play/Pause/Stop/Seek/GetPositionInfo（M2）
 │       ├── RenderingControlClient.{h,cpp} # SetVolume/GetVolume/SetMute（M2）
-│       ├── MediaHttpServer.{h,cpp}  # 本机 HTTP 媒体服务，支持 Range（M2）
-│       └── CastManager.{h,cpp}      # 投屏编排 + 状态轮询，暴露 QML（M2）
-├── cmake/Info.plist.in         # macOS bundle 模板（含 NSLocalNetworkUsageDescription，见坑#9）
+│       ├── MediaHttpServer.{h,cpp}  # 本机 HTTP：文件 Range 模式 + 转码直播流模式（M2/M3）
+│       ├── MediaProbe.{h,cpp}       # ffprobe 探测 + 直推兼容性判断（M3）
+│       ├── TranscodeSession.{h,cpp} # ffmpeg → H.264+AAC MPEG-TS 直播流（M3）
+│       └── CastManager.{h,cpp}      # 投屏编排（探测→直推/转码）+ 状态轮询（M2/M3）
+├── cmake/Info.plist.in         # bundle 模板（本地化声明/网络权限/文件关联，见坑#9/#14）
+├── cmake/dbhx.icns             # 应用图标
+├── scripts/package-macos.sh    # 一键打包 .app/.dmg（M5）
+├── scripts/package-windows.bat # Windows windeployqt 打包（待跑）
+├── tests/                      # Qt Test 单元测试（M6）
+├── translations/dbhx_en.ts     # 英文翻译（86 条，M6）
 └── qml/
-    ├── Main.qml                # 主窗口；PlayerController + DlnaDeviceModel + CastManager 实例
-    ├── theme/Theme.qml         # 单例：分平台设计令牌（颜色/字体/圆角）
+    ├── Main.qml                # 主窗口；快捷键/设置持久化/面板切换/Toast
+    ├── theme/Theme.qml         # 单例：Ant Design v5 设计令牌（分平台字体/标题栏）
+    ├── controls/               # AntButton/AntSlider/AntTag/AntIconButton/AntMenu/AntMenuItem/ColorIcon/Toast
+    ├── icons/                  # 白色描边 SVG 图标（MultiEffect 着色）
     ├── chrome/{WindowsTitleBar,MacTitleBar}.qml  # 两套标题栏
-    ├── player/{PlayerView,ControlBar}.qml        # 播放视图 + 控制条（右键菜单内联在 PlayerView）
-    └── cast/{DeviceList,CastPanel}.qml  # 设备面板（Scan+点击投屏）+ 投屏中远程播控面板
+    ├── player/{PlayerView,ControlBar,PlaylistPanel}.qml  # 播放视图/控制条/播放列表
+    └── cast/{DeviceList,CastPanel}.qml  # 设备面板 + 投屏远程播控
 ```
 
 > 约定：`player/` 是播放抽象层，`dlna/` 是投屏层，二者通过 QML（Main.qml）组合。M2 的 CastManager 将放在 `dlna/`。
@@ -166,6 +178,11 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 9. **macOS 未签名二进制发不出组播**：sendto 组播返回 `EHOSTUNREACH`（errno 65，"No route to host"），SSDP 静默失败、Scan 无设备。**ad-hoc 签名即解决**（CMake 已加 POST_BUILD `codesign --force -s -`，勿删）；Info.plist 需含 `NSLocalNetworkUsageDescription`（模板在 `cmake/Info.plist.in`）。排查时可用 raw sendto C 程序看 errno 区分权限/路由。
 10. **macOS 装 Qt 别用 brew/清华源**：本机（Intel + macOS 26）brew 无 bottle 会源码编译（Qt 要数小时）；清华 Qt 镜像 qtbase 校验和多次不一致（同步中多节点内容不同）；**NJU 源 `mirror.nju.edu.cn/qt` 校验一致且快**；官方 download.qt.io 极慢（~10KB/s）。pip 用清华源正常。
 11. **QByteArray::startsWith 无大小写忽略重载**（Qt6.12）：用 `trimmed.toLower().startsWith("range:")`。
+12. **QProcess::atEnd() 运行中缓冲为空也返回 true**：直播流据此判断 EOF 会提前断连。必须查 `process->state() == NotRunning && bytesAvailable() == 0`（MediaHttpServer 已处理）。
+13. **QStringDecoder 无 ICU 不支持 GB18030**（isValid()=false 静默失败）：中文 SRT 兜底用 **Core5Compat 的 QTextCodec**（已加 `Qt6::Core5Compat` 依赖，aqt 模块 `qt5compat`）。
+14. **macOS QLocale::system() 受 bundle 本地化声明影响**：Info.plist 只写 `CFBundleDevelopmentRegion=en` 时，中文系统也返回 en_CN。必须加 `CFBundleLocalizations=[zh-Hans,en]`（已加）。另：`-AppleLanguages "(en)"` 启动参数会被 macOS **持久化**到应用 prefs，测完要 `defaults delete com.dbhx.player AppleLanguages`。
+15. **Qt Test 里 QTcpServer 需要事件循环**：客户端 `waitForReadyRead` 不派发其他 socket 的通知，服务端永远 accept 不了。测试里要 `QCoreApplication::processEvents` 泵循环（见 tests/dlnatest.cpp）。
+16. **自定义 Button 宽度**：Basic 样式默认 padding 与 implicitWidth 公式不一致会差 1px 导致文字省略号。AntButton 用 TextMetrics + 显式 padding 解决；图标按钮记得设 `Accessible.name`（UI 自动化/无障碍都靠它）。
 
 ## 8. DLNA 投屏架构
 
@@ -190,13 +207,21 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 
 **下一步 M3（ffmpeg 转码兜底）**：电视不兼容格式（MKV/HEVC/DTS）实时转 H.264+AAC MPEG-TS。注意 §12：需选 **LGPL ffmpeg 构建**（macOS 官方 Qt 自带 FFmpeg 已是 LGPL；Windows MSYS2 ffmpeg 是 GPL 需替换）。转码流由 MediaHttpServer 以 chunked 方式喂给电视（无 Content-Length，需处理电视不支持 chunked 的情况）。
 
+## 9b. M3–M6 完成记录（2026-11-14 凌晨，macOS）
+
+- **M3**：`MediaProbe`（ffprobe JSON，直推白名单 = MP4/MOV 容器 + H.264 + AAC/MP3）、`TranscodeSession`（优先 `h264_videotoolbox` 保 LGPL，libx264 兜底）、`MediaHttpServer.startLive`（单消费者直播流，无 Range）。模拟渲染器验证：HEVC MKV → 电视拉到合法 TS（0x47 同步字节），MP4 仍直推。
+- **M4**：Ant Design v5 全套 UI（`qml/controls/Ant*.qml` + 白色描边 SVG 图标经 MultiEffect 着色）；播放列表（自动连播）、SRT 字幕（UTF-8/UTF-16/**GB18030**，同名自动加载）、倍速 0.5–2x、截图到 Pictures、快捷键（Space/方向键/F/M/Esc/Ctrl+O）、全屏、系统托盘。UI 自动化逐项验证通过。
+- **M5**：`scripts/package-macos.sh` 一键出 universal .app + .dmg（macdeployqt 后**删 sqldrivers 再 ad-hoc 重签**）；`dist/dbhx-player-0.1.0-macos-universal.dmg` 已挂载实测可播。Windows 用 `scripts/package-windows.bat`（未跑）。
+- **M6**：`Logging`（stderr + AppData/logs 轮转 5 份）、QSettings（音量/静音/倍速/窗口几何）、i18n（中文源 + `translations/dbhx_en.ts` 86 条全译，随系统语言切换）、`tests/`（playertest + dlnatest 共 11 例，ctest 全过）、投屏轮询连续 10 次失败才断开。
+- **待用户验收**：真机投屏回归（M3 转码路径在真电视上的表现）、托盘图标、设置持久化手感。Windows 全量回归。
+
 ## 10. Git 状态与跨机同步
 
 - **remote**：`origin = https://github.com/lzdbh/dbh-player.git`，`main` 跟踪 `origin/main`。
-- **M0/M1**：已提交并推送（`1206ff8`、`61ed0eb`）。
-- **M2**：macOS 端完成并验收，提交记录见 git log。
+- **M0/M1/M2**：已提交并推送（`1206ff8`、`61ed0eb`、`d05e4cb`）。
+- **M3–M6**：macOS 端完成，提交记录见 git log（M3 `34baa41`、M4 `ca45f22`、M5 `ba19c08`、M6 见最新）。
 - **回家后**：`git pull` → 按 §5 配环境 → §6 构建。
-- ⚠️ **网络**：github.com 在你的网络下需 **Steam++ 加速**（并加 revoke 豁免）才通；push/pull 前确认加速开启。macOS 本机 pip 走清华源、Qt 走 NJU 源（坑#10）。
+- ⚠️ **网络**：github.com 在你的网络下需 **Steam++ 加速**（并加 revoke 豁免）才通；push/pull 前确认加速开启。macOS 本机 pip 走清华源、Qt 走 NJU 源（坑#10）。**macOS 已配好 PAT（osxkeychain），可直接 push**。
 - **提交约定**：`feat:`/`fix:` 前缀；**UI 改动先验收再提交**。
 
 ## 11. 测试与验证
@@ -208,6 +233,8 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 - **播放确证**：命令行传测试视频，开 `QT_FORCE_STDERR_LOGGING=1`，确认 duration/position 推进（WMF 不打 FFmpeg 那种日志，可临时在 QML 加 `onPositionChanged` 打印）。
 - **DLNA 发现**：电视与电脑同 Wi-Fi 并开启 → 控制条 **📺 → Scan** → 应列出设备。macOS 若 Scan 无设备先查坑#9（签名）。
 - **投屏**：Scan 后点击设备 → 电视应播放当前打开的视频，侧栏变为 CastPanel 远程播控。
+- **单元测试**：`ctest --test-dir build --output-on-failure`（playertest + dlnatest，11 例）。
+- **打包**：`scripts/package-macos.sh`（universal .app + .dmg 到 dist/）。
 
 ## 12. 许可证注意（M5 发布前处理）
 

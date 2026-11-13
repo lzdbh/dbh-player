@@ -29,7 +29,7 @@ Rectangle {
             spacing: 8
 
             Text {
-                text: "投屏中"
+                text: qsTr("投屏中")
                 color: Theme.colorText
                 font.pixelSize: Theme.fontSizeLG
                 font.family: Theme.fontFamily
@@ -39,7 +39,7 @@ Rectangle {
             AntButton {
                 variant: "danger"
                 small: true
-                text: "断开"
+                text: qsTr("断开")
                 onClicked: root.castManager.disconnect()
             }
         }
@@ -74,7 +74,7 @@ Rectangle {
                 }
                 AntTag {
                     visible: root.castManager.transcoding
-                    text: "转码中"
+                    text: qsTr("转码中")
                     tone: "processing"
                 }
             }
@@ -109,7 +109,7 @@ Rectangle {
                 enabled: !root.castManager.transcoding
                 onMoved: root.castManager.seek(value)
                 ToolTip.visible: hovered && root.castManager.transcoding
-                ToolTip.text: "转码流不支持拖动进度"
+                ToolTip.text: qsTr("转码流不支持拖动进度")
             }
             Text {
                 text: root.fmt(root.castManager.duration)
@@ -126,12 +126,12 @@ Rectangle {
 
             AntButton {
                 variant: "primary"
-                text: root.castManager.playing ? "⏸ 暂停" : "▶ 播放"
+                text: root.castManager.playing ? qsTr("⏸ 暂停") : qsTr("▶ 播放")
                 Layout.fillWidth: true
                 onClicked: root.castManager.togglePlay()
             }
             AntButton {
-                text: "停止投屏"
+                text: qsTr("停止投屏")
                 Layout.fillWidth: true
                 onClicked: root.castManager.disconnect()
             }
@@ -176,7 +176,7 @@ Rectangle {
                 id: hint
                 anchors.fill: parent
                 anchors.margins: 8
-                text: "电视直接从本机拉流播放。请保持应用运行、电脑与电视在同一 Wi-Fi。"
+                text: qsTr("电视直接从本机拉流播放。请保持应用运行、电脑与电视在同一 Wi-Fi。")
                 color: Theme.colorTextTertiary
                 font.pixelSize: Theme.fontSizeSM
                 font.family: Theme.fontFamily

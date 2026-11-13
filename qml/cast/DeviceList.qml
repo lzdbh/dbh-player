@@ -22,7 +22,7 @@ Rectangle {
             spacing: 8
 
             Text {
-                text: "投屏设备"
+                text: qsTr("投屏设备")
                 color: Theme.colorText
                 font.pixelSize: Theme.fontSizeLG
                 font.family: Theme.fontFamily
@@ -32,14 +32,14 @@ Rectangle {
             AntButton {
                 variant: "primary"
                 small: true
-                text: "扫描"
+                text: qsTr("扫描")
                 onClicked: root.deviceModel.scan()
             }
         }
 
         Text {
             Layout.fillWidth: true
-            text: "搜索同一 Wi-Fi 下的 DLNA 电视 / 投屏器（当贝、乐播等）"
+            text: qsTr("搜索同一 Wi-Fi 下的 DLNA 电视 / 投屏器（当贝、乐播等）")
             color: Theme.colorTextTertiary
             font.pixelSize: Theme.fontSizeSM
             font.family: Theme.fontFamily
@@ -142,14 +142,14 @@ Rectangle {
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "暂无设备"
+                    text: qsTr("暂无设备")
                     color: Theme.colorTextTertiary
                     font.pixelSize: Theme.fontSize
                     font.family: Theme.fontFamily
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "确认电视与电脑在同一 Wi-Fi，然后点击「扫描」"
+                    text: qsTr("确认电视与电脑在同一 Wi-Fi，然后点击「扫描」")
                     color: Theme.colorTextQuaternary
                     font.pixelSize: Theme.fontSizeSM
                     font.family: Theme.fontFamily

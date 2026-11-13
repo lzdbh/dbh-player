@@ -40,14 +40,14 @@ TranscodeSession::TranscodeSession(QObject *parent)
         if (exitCode == 0) {
             emit streamFinished();
         } else {
-            emit errorOccurred(QStringLiteral("ffmpeg exited with code %1: %2")
+            emit errorOccurred(tr("ffmpeg exited with code %1: %2")
                                    .arg(exitCode)
                                    .arg(QString::fromUtf8(m_process.readAllStandardError()).left(300)));
         }
     });
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (!m_stopping && error == QProcess::FailedToStart)
-            emit errorOccurred(QStringLiteral("ffmpeg could not start."));
+            emit errorOccurred(tr("ffmpeg could not start."));
     });
 }
 

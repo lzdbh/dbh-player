@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QStringDecoder>
+#include <QTextCodec>
 
 SubtitleTrack::SubtitleTrack(QObject *parent)
     : QObject(parent)
@@ -78,9 +79,10 @@ bool SubtitleTrack::parse(const QByteArray &data)
         auto utf8 = QStringDecoder(QStringDecoder::Utf8);
         text = utf8(data);
         if (utf8.hasError()) {
-            auto gb = QStringDecoder("GB18030");
-            if (gb.isValid())
-                text = gb(data);
+            // Chinese SRT files are often GB18030; QStringDecoder lacks it
+            // without ICU, so use the Core5Compat codec.
+            if (auto *codec = QTextCodec::codecForName("GB18030"))
+                text = codec->toUnicode(data);
         }
     }
     if (text.isEmpty())

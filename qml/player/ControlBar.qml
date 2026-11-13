@@ -81,7 +81,7 @@ Rectangle {
                 enabled: root.playlist && root.playlist.currentIndex > 0
                 onClicked: root.playlist.previous()
                 ToolTip.visible: hovered
-                ToolTip.text: "上一个"
+                ToolTip.text: qsTr("上一个")
             }
             AntIconButton {
                 iconSource: root.player.playing ? "qrc:/Dbhx/icons/pause.svg"
@@ -91,13 +91,13 @@ Rectangle {
                 implicitHeight: 40
                 onClicked: root.player.togglePlay()
                 ToolTip.visible: hovered
-                ToolTip.text: root.player.playing ? "暂停 (Space)" : "播放 (Space)"
+                ToolTip.text: root.player.playing ? qsTr("暂停 (Space)") : qsTr("播放 (Space)")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/stop.svg"
                 onClicked: root.player.stop()
                 ToolTip.visible: hovered
-                ToolTip.text: "停止"
+                ToolTip.text: qsTr("停止")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/next.svg"
@@ -105,7 +105,7 @@ Rectangle {
                          && root.playlist.currentIndex < root.playlist.count - 1
                 onClicked: root.playlist.next()
                 ToolTip.visible: hovered
-                ToolTip.text: "下一个"
+                ToolTip.text: qsTr("下一个")
             }
 
             Item { Layout.preferredWidth: 8 }
@@ -120,7 +120,7 @@ Rectangle {
                 text: root.player.playbackRate.toFixed(2).replace(/\.?0+$/, "") + "x"
                 onClicked: rateMenu.popup(rateButton, 0, -rateMenu.height - 4)
                 ToolTip.visible: hovered
-                ToolTip.text: "倍速"
+                ToolTip.text: qsTr("倍速")
 
                 AntMenu {
                     id: rateMenu
@@ -146,25 +146,25 @@ Rectangle {
                 onClicked: root.subtitleLoaded ? root.subtitleToggled()
                                                : root.subtitleLoadRequested()
                 ToolTip.visible: hovered
-                ToolTip.text: root.subtitleLoaded ? "字幕开关" : "加载字幕 (SRT)"
+                ToolTip.text: root.subtitleLoaded ? qsTr("字幕开关") : qsTr("加载字幕 (SRT)")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/camera.svg"
                 onClicked: root.screenshotRequested()
                 ToolTip.visible: hovered
-                ToolTip.text: "截图"
+                ToolTip.text: qsTr("截图")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/playlist.svg"
                 onClicked: root.playlistToggled()
                 ToolTip.visible: hovered
-                ToolTip.text: "播放列表"
+                ToolTip.text: qsTr("播放列表")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/cast.svg"
                 onClicked: root.castToggled()
                 ToolTip.visible: hovered
-                ToolTip.text: "投屏到设备"
+                ToolTip.text: qsTr("投屏到设备")
             }
 
             Item { Layout.preferredWidth: 8 }
@@ -175,7 +175,7 @@ Rectangle {
                             : "qrc:/Dbhx/icons/volume.svg"
                 onClicked: root.player.muted = !root.player.muted
                 ToolTip.visible: hovered
-                ToolTip.text: root.player.muted ? "取消静音 (M)" : "静音 (M)"
+                ToolTip.text: root.player.muted ? qsTr("取消静音 (M)") : qsTr("静音 (M)")
             }
             AntSlider {
                 id: volumeSlider
@@ -197,7 +197,7 @@ Rectangle {
                                             : "qrc:/Dbhx/icons/fullscreen.svg"
                 onClicked: root.fullscreenToggled()
                 ToolTip.visible: hovered
-                ToolTip.text: root.fullscreen ? "退出全屏 (F)" : "全屏 (F)"
+                ToolTip.text: root.fullscreen ? qsTr("退出全屏 (F)") : qsTr("全屏 (F)")
             }
         }
     }

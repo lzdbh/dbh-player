@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVariant>
 #include <QtQml/qqmlregistration.h>
 
 // Application-wide context exposed to QML as a singleton (Dbhx.AppContext).
@@ -28,6 +29,8 @@ public:
     QString appVersion() const;
 
     Q_INVOKABLE QString picturesDir() const;
+    Q_INVOKABLE QVariant loadSetting(const QString &key, const QVariant &defaultValue) const;
+    Q_INVOKABLE void saveSetting(const QString &key, const QVariant &value) const;
 
 private:
     QString m_platform;

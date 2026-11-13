@@ -40,7 +40,7 @@ void MediaProbe::probe(const QString &filePath)
     const QString tool = ffprobePath();
     if (tool.isEmpty()) {
         Result r;
-        r.error = QStringLiteral("ffprobe not found; install ffmpeg to enable format detection.");
+        r.error = tr("ffprobe not found; install ffmpeg to enable format detection.");
         emit probed(r);
         return;
     }
@@ -50,7 +50,7 @@ void MediaProbe::probe(const QString &filePath)
         process->deleteLater();
         Result r;
         if (exitCode != 0) {
-            r.error = QStringLiteral("ffprobe failed: %1")
+            r.error = tr("ffprobe failed: %1")
                           .arg(QString::fromUtf8(process->readAllStandardError()).left(200));
             emit probed(r);
             return;
@@ -86,7 +86,7 @@ void MediaProbe::probe(const QString &filePath)
     connect(process, &QProcess::errorOccurred, this, [this, process](QProcess::ProcessError) {
         process->deleteLater();
         Result r;
-        r.error = QStringLiteral("ffprobe could not start.");
+        r.error = tr("ffprobe could not start.");
         emit probed(r);
     });
 

@@ -1,5 +1,7 @@
 #include "CastManager.h"
 
+#include "Logging.h"
+
 #include <QFileInfo>
 
 CastManager::CastManager(QObject *parent)
@@ -16,7 +18,7 @@ CastManager::CastManager(QObject *parent)
             return;
         m_avTransport.play();
         setPlaying(true);
-        setStatus(m_transcoding ? QStringLiteral("Casting (transcoded)")
+        setStatus(m_transcoding ? tr("Casting (transcoded)")
                                 : QStringLiteral("Casting"));
         m_renderingControl.getVolume();
         m_pollTimer.start();
@@ -26,6 +28,7 @@ CastManager::CastManager(QObject *parent)
             [this](qint64 positionMs, qint64 durationMs) {
                 if (!m_active)
                     return;
+                m_pollFailures = 0;
                 if (m_position != positionMs) {
                     m_position = positionMs;
                     emit positionChanged();
@@ -45,7 +48,7 @@ CastManager::CastManager(QObject *parent)
                 } else if (state == QLatin1String("PAUSED_PLAYBACK")) {
                     setPlaying(false);
                 } else if (state == QLatin1String("STOPPED")) {
-                    setStatus(QStringLiteral("Stopped on device"));
+                    setStatus(tr("Stopped on device"));
                     disconnect();
                 }
             });
@@ -54,11 +57,15 @@ CastManager::CastManager(QObject *parent)
             [this](const QString &action, const QString &error) {
                 if (!m_active)
                     return;
-                // Polling failures are transient; setup/control failures end the session.
+                // Polling failures are transient; end the session only after
+                // the renderer stays unreachable for ~10 consecutive polls.
                 if (action == QLatin1String("GetPositionInfo")
-                    || action == QLatin1String("GetTransportInfo"))
+                    || action == QLatin1String("GetTransportInfo")) {
+                    if (++m_pollFailures >= 10)
+                        fail(tr("Device stopped responding."));
                     return;
-                fail(QStringLiteral("%1 failed: %2").arg(action, error));
+                }
+                fail(tr("%1 failed: %2").arg(action, error));
             });
 
     connect(&m_renderingControl, &RenderingControlClient::volumeReceived, this,
@@ -78,26 +85,29 @@ CastManager::CastManager(QObject *parent)
         }
         const QString title = QFileInfo(m_pendingPath).fileName();
         if (result.directPushCompatible) {
+            qCInfo(lcCast) << "Direct push:" << title << result.videoCodec << result.audioCodec;
             if (!m_server.start(m_pendingPath)) {
-                fail(QStringLiteral("Cannot start local media server."));
+                fail(tr("Cannot start local media server."));
                 return;
             }
             beginPush(m_server.mediaUrl(), title, m_server.mimeType(), m_server.fileSize(), false);
         } else {
+            qCInfo(lcCast) << "Transcode push:" << title << result.formatName
+                           << result.videoCodec << result.audioCodec;
             if (TranscodeSession::ffmpegPath().isEmpty()) {
-                fail(QStringLiteral("This format needs transcoding but ffmpeg was not found. "
-                                    "Install ffmpeg to cast %1 files.")
+                fail(tr("This format needs transcoding but ffmpeg was not found. "
+                 "Install ffmpeg to cast %1 files.")
                          .arg(result.formatName));
                 return;
             }
-            setStatus(QStringLiteral("Transcoding for %1...").arg(m_deviceName));
+            setStatus(tr("Transcoding for %1...").arg(m_deviceName));
             if (!m_transcode.start(m_pendingPath)) {
-                fail(QStringLiteral("Cannot start ffmpeg transcode."));
+                fail(tr("Cannot start ffmpeg transcode."));
                 return;
             }
             if (!m_server.startLive(m_transcode.stream(), QStringLiteral("video/mp2t"))) {
                 m_transcode.stop();
-                fail(QStringLiteral("Cannot start local media server."));
+                fail(tr("Cannot start local media server."));
                 return;
             }
             setTranscoding(true);
@@ -128,11 +138,11 @@ void CastManager::cast(const QUrl &avTransportUrl, const QUrl &renderingControlU
 {
     const QString path = localFile.toLocalFile();
     if (path.isEmpty() || !QFileInfo::exists(path)) {
-        emit castFailed(QStringLiteral("Open a local video file before casting."));
+        emit castFailed(tr("Open a local video file before casting."));
         return;
     }
     if (!avTransportUrl.isValid()) {
-        emit castFailed(QStringLiteral("Device has no AVTransport control URL."));
+        emit castFailed(tr("Device has no AVTransport control URL."));
         return;
     }
 
@@ -153,7 +163,7 @@ void CastManager::cast(const QUrl &avTransportUrl, const QUrl &renderingControlU
     m_renderingControl.setControlUrl(renderingControlUrl);
 
     setActive(true);
-    setStatus(QStringLiteral("Checking format..."));
+    setStatus(tr("Checking format..."));
     m_probe.probe(path);
     emit castStarted();
 }
@@ -162,11 +172,11 @@ void CastManager::beginPush(const QUrl &mediaUrl, const QString &title,
                             const QString &mimeType, qint64 sizeBytes, bool live)
 {
     if (!mediaUrl.isValid()) {
-        fail(QStringLiteral("No LAN IPv4 address found; is Wi-Fi connected?"));
+        fail(tr("No LAN IPv4 address found; is Wi-Fi connected?"));
         return;
     }
-    setStatus(m_transcoding ? QStringLiteral("Casting (transcoded)")
-                            : QStringLiteral("Connecting to %1...").arg(m_deviceName));
+    setStatus(m_transcoding ? tr("Casting (transcoded)")
+                            : tr("Connecting to %1...").arg(m_deviceName));
     m_avTransport.setUri(mediaUrl, title, mimeType, sizeBytes, live);
 }
 
@@ -220,7 +230,7 @@ void CastManager::disconnect()
     setTranscoding(false);
     setPlaying(false);
     setActive(false);
-    setStatus(QStringLiteral("Disconnected"));
+    setStatus(tr("Disconnected"));
 }
 
 void CastManager::setActive(bool active)
@@ -249,6 +259,7 @@ void CastManager::setStatus(const QString &status)
 
 void CastManager::fail(const QString &message)
 {
+    qCWarning(lcCast) << "Cast failed:" << message;
     m_pollTimer.stop();
     m_server.stop();
     m_transcode.stop();

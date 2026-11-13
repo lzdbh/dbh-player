@@ -83,6 +83,7 @@ private:
     qint64 m_position = 0;
     qint64 m_duration = 0;
     int m_volume = 50;
+    int m_pollFailures = 0;
 
     // Pending cast request, kept while ffprobe runs.
     QString m_pendingPath;

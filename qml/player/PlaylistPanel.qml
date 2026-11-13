@@ -22,7 +22,7 @@ Rectangle {
             spacing: 8
 
             Text {
-                text: "播放列表"
+                text: qsTr("播放列表")
                 color: Theme.colorText
                 font.pixelSize: Theme.fontSizeLG
                 font.family: Theme.fontFamily
@@ -30,7 +30,7 @@ Rectangle {
                 Layout.fillWidth: true
             }
             AntTag {
-                text: root.playlist.count + " 项"
+                text: root.playlist.count + qsTr(" 项")
                 tone: "default"
             }
         }
@@ -42,13 +42,13 @@ Rectangle {
             AntButton {
                 variant: "primary"
                 small: true
-                text: "添加文件"
+                text: qsTr("添加文件")
                 Layout.fillWidth: true
                 onClicked: addDialog.open()
             }
             AntButton {
                 small: true
-                text: "清空"
+                text: qsTr("清空")
                 enabled: root.playlist.count > 0
                 onClicked: root.playlist.clear()
             }
@@ -115,7 +115,7 @@ Rectangle {
                         opacity: itemMouse.containsMouse ? 1 : 0
                         onClicked: root.playlist.removeAt(item.index)
                         ToolTip.visible: hovered
-                        ToolTip.text: "移除"
+                        ToolTip.text: qsTr("移除")
                     }
                 }
 
@@ -136,14 +136,14 @@ Rectangle {
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "列表为空"
+                    text: qsTr("列表为空")
                     color: Theme.colorTextTertiary
                     font.pixelSize: Theme.fontSize
                     font.family: Theme.fontFamily
                 }
                 Text {
                     Layout.alignment: Qt.AlignHCenter
-                    text: "添加文件或拖入视频到播放区"
+                    text: qsTr("添加文件或拖入视频到播放区")
                     color: Theme.colorTextQuaternary
                     font.pixelSize: Theme.fontSizeSM
                     font.family: Theme.fontFamily
@@ -154,11 +154,11 @@ Rectangle {
 
     FileDialog {
         id: addDialog
-        title: "添加到播放列表"
+        title: qsTr("添加到播放列表")
         fileMode: FileDialog.OpenFiles
         nameFilters: [
-            "视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)",
-            "所有文件 (*)"
+            qsTr("视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)"),
+            qsTr("所有文件 (*)")
         ]
         onAccepted: root.playlist.addUrls(selectedFiles)
     }

@@ -67,4 +67,6 @@ private:
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_audio = nullptr;
     float m_volume = 1.0f;
+    float m_rate = 1.0f;
+    bool m_muted = false;
 };

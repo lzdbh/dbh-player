@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QLocale>
 #include <QMenu>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -6,7 +7,10 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSystemTrayIcon>
+#include <QTranslator>
 #include <QUrl>
+
+#include "Logging.h"
 
 namespace {
 QIcon makeTrayIcon()
@@ -42,15 +46,29 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
     QApplication::setOrganizationName(QStringLiteral("DBHX"));
     QApplication::setQuitOnLastWindowClosed(true);
+    Logging::install();
+
+    // Source strings are Chinese; load English when the system isn't Chinese.
+    QTranslator translator;
+    const bool english = !QLocale::system().name().startsWith(QLatin1String("zh"))
+                         && translator.load(QStringLiteral(":/i18n/dbhx_en.qm"));
+    if (english)
+        QApplication::installTranslator(&translator);
+    qCInfo(lcPlayer) << "DBHX Player" << QApplication::applicationVersion()
+                     << "locale:" << QLocale::system().name()
+                     << "english UI:" << english;
 
     // Basic style gives us full control over the custom, per-platform theming.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
-    // Optional file path arguments: open them on startup (file association / CLI).
+    // Optional file path arguments: open them on startup (file association /
+    // CLI). Skip option-style args such as -AppleLanguages.
     QStringList initialFiles;
     const QStringList args = app.arguments();
-    for (int i = 1; i < args.size(); ++i)
-        initialFiles << QUrl::fromLocalFile(args.at(i)).toString();
+    for (int i = 1; i < args.size(); ++i) {
+        if (!args.at(i).startsWith(QLatin1Char('-')))
+            initialFiles << QUrl::fromLocalFile(args.at(i)).toString();
+    }
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("initialFiles"), initialFiles);

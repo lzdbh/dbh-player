@@ -1,6 +1,7 @@
 #include "AppContext.h"
 
 #include <QCoreApplication>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QtGlobal>
 
@@ -46,4 +47,16 @@ QString AppContext::appVersion() const
 QString AppContext::picturesDir() const
 {
     return QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+}
+
+QVariant AppContext::loadSetting(const QString &key, const QVariant &defaultValue) const
+{
+    QSettings settings;
+    return settings.value(key, defaultValue);
+}
+
+void AppContext::saveSetting(const QString &key, const QVariant &value) const
+{
+    QSettings settings;
+    settings.setValue(key, value);
 }
