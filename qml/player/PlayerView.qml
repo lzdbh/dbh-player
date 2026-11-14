@@ -126,12 +126,14 @@ Item {
         }
     }
 
-    // Subtitle overlay above the control bar.
+    // Subtitle overlay pinned just above the video's bottom edge (the video
+    // area reserves the control bar height), so it doesn't move when the
+    // control bar shows/hides.
     Text {
         id: subtitleText
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.controlsVisible ? 96 : 32
+        anchors.bottomMargin: controlBar.height + 12
         width: parent.width * 0.85
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
@@ -142,8 +144,6 @@ Item {
         font.family: Theme.fontFamily
         visible: root.subtitleVisible && root.subtitles && root.subtitles.loaded
         text: visible ? root.subtitles.textAt(root.player.position) : ""
-
-        Behavior on anchors.bottomMargin { NumberAnimation { duration: 150 } }
     }
 
     ControlBar {
@@ -221,14 +221,16 @@ Item {
             text: qsTr("停止")
             onTriggered: root.player.stop()
         }
-        MenuSeparator {}
-        Repeater {
-            model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-            AntMenuItem {
-                required property var modelData
-                text: modelData + "x"
-                checked: Math.abs(root.player.playbackRate - modelData) < 0.01
-                onTriggered: root.player.playbackRate = modelData
+        AntMenu {
+            title: qsTr("倍速")
+            Repeater {
+                model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+                AntMenuItem {
+                    required property var modelData
+                    text: modelData + "x"
+                    checked: Math.abs(root.player.playbackRate - modelData) < 0.01
+                    onTriggered: root.player.playbackRate = modelData
+                }
             }
         }
         MenuSeparator {}

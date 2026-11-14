@@ -1,6 +1,9 @@
 #include <QApplication>
+#include <QColor>
 #include <QLocale>
 #include <QMenu>
+#include <QPalette>
+#include <QStyleHints>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QPainter>
@@ -55,6 +58,33 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName(QStringLiteral("DBHX"));
     QApplication::setQuitOnLastWindowClosed(true);
     Logging::install();
+
+    // Force dark color scheme so default-styled controls (e.g. the internally
+    // rendered nested submenu entry) use light text like the custom UI.
+    QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
+
+    // Dark application palette so default-styled Qt Quick controls (e.g. the
+    // internally-rendered nested submenu entry) use light text and a dark
+    // hover instead of the light defaults.
+    {
+        QPalette pal;
+        pal.setColor(QPalette::Window, QColor(0x26, 0x33, 0x3e));
+        pal.setColor(QPalette::WindowText, QColor(0xee, 0xf2, 0xf6));
+        pal.setColor(QPalette::Base, QColor(0x1e, 0x28, 0x2f));
+        pal.setColor(QPalette::AlternateBase, QColor(0x2e, 0x3c, 0x48));
+        pal.setColor(QPalette::Text, QColor(0xee, 0xf2, 0xf6));
+        pal.setColor(QPalette::Button, QColor(0x2e, 0x3c, 0x48));
+        pal.setColor(QPalette::ButtonText, QColor(0xee, 0xf2, 0xf6));
+        pal.setColor(QPalette::Highlight, QColor(0x3a, 0x4a, 0x58));
+        pal.setColor(QPalette::HighlightedText, QColor(0xff, 0xff, 0xff));
+        pal.setColor(QPalette::ToolTipBase, QColor(0x1e, 0x28, 0x2f));
+        pal.setColor(QPalette::ToolTipText, QColor(0xee, 0xf2, 0xf6));
+        pal.setColor(QPalette::PlaceholderText, QColor(0x7f, 0x8d, 0x9a));
+        pal.setColor(QPalette::Mid, QColor(0x7f, 0x8d, 0x9a));
+        pal.setColor(QPalette::Light, QColor(0x40, 0x50, 0x5c));
+        pal.setColor(QPalette::Dark, QColor(0x1a, 0x22, 0x29));
+        QApplication::setPalette(pal);
+    }
 
     // Source strings are Chinese; load English when the system isn't Chinese.
     QTranslator translator;

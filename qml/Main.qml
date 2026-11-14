@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtQuick.Effects
 
 ApplicationWindow {
     id: root
@@ -13,7 +14,10 @@ ApplicationWindow {
     visible: true
     title: AppContext.appName
     flags: Qt.Window | Qt.FramelessWindowHint
-    color: Theme.colorBgLayout
+    color: "transparent"
+    // Default ApplicationWindow background is opaque; make it transparent so
+    // the rounded shell's masked corners reveal the desktop.
+    background: Rectangle { color: "transparent" }
 
     property bool panelVisible: false
     property string panelMode: "cast"   // cast | playlist
@@ -123,6 +127,19 @@ ApplicationWindow {
         onCastFailed: (message) => toast.show(message, "error")
     }
 
+    // Rounded window content: a rounded shell masked so the frameless window
+    // gets rounded corners (the window surface itself is transparent).
+    Rectangle {
+        id: shell
+        anchors.fill: parent
+        radius: 12
+        color: Theme.colorBgLayout
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            maskEnabled: true
+            maskSource: shellMask
+        }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -196,6 +213,16 @@ ApplicationWindow {
                 }
             }
         }
+    }
+    }
+
+    Rectangle {
+        id: shellMask
+        anchors.fill: parent
+        radius: 12
+        color: "black"
+        visible: false
+        layer.enabled: true
     }
 
     Toast {
