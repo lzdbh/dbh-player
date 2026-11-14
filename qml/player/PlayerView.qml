@@ -221,15 +221,18 @@ Item {
             text: qsTr("停止")
             onTriggered: root.player.stop()
         }
-        AntMenu {
-            title: qsTr("倍速")
-            Repeater {
-                model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-                AntMenuItem {
-                    required property var modelData
-                    text: modelData + "x"
-                    checked: Math.abs(root.player.playbackRate - modelData) < 0.01
-                    onTriggered: root.player.playbackRate = modelData
+        AntMenuItem {
+            text: qsTr("倍速")
+            submenuArrow: true
+            AntMenu {
+                Repeater {
+                    model: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+                    AntMenuItem {
+                        required property var modelData
+                        text: modelData + "x"
+                        checked: Math.abs(root.player.playbackRate - modelData) < 0.01
+                        onTriggered: root.player.playbackRate = modelData
+                    }
                 }
             }
         }
