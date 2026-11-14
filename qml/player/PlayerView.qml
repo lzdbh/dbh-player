@@ -161,10 +161,38 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 150 } }
         onCastToggled: root.castToggled()
         onPlaylistToggled: root.playlistToggled()
-        onSubtitleToggled: root.subtitleVisible = !root.subtitleVisible
+        onSubtitleMenuRequested: subtitleMenu.popup()
         onSubtitleLoadRequested: subtitleDialog.open()
         onScreenshotRequested: root.takeScreenshot()
         onFullscreenToggled: root.fullscreenToggled()
+    }
+
+    AntMenu {
+        id: subtitleMenu
+
+        Repeater {
+            model: root.player.subtitleTracks
+            AntMenuItem {
+                required property var modelData
+                text: modelData.label
+                onTriggered: root.player.selectSubtitleTrack(modelData.index)
+            }
+        }
+        AntMenuItem {
+            visible: root.player.subtitleTracks.length === 0
+            enabled: false
+            text: qsTr("无内嵌字幕轨")
+        }
+        MenuSeparator {}
+        AntMenuItem {
+            text: qsTr("关闭字幕")
+            enabled: root.subtitles && root.subtitles.loaded
+            onTriggered: root.player.disableSubtitles()
+        }
+        AntMenuItem {
+            text: qsTr("从文件加载字幕...")
+            onTriggered: subtitleDialog.open()
+        }
     }
 
     AntMenu {

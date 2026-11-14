@@ -56,6 +56,7 @@ ApplicationWindow {
             if (subtitles.load(file))
                 toast.show(qsTr("已加载内嵌字幕"), "success")
         }
+        onSubtitlesCleared: subtitles.unload()
     }
 
     PlaylistController {

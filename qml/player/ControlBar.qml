@@ -15,7 +15,7 @@ Rectangle {
 
     signal castToggled()
     signal playlistToggled()
-    signal subtitleToggled()
+    signal subtitleMenuRequested()
     signal subtitleLoadRequested()
     signal screenshotRequested()
     signal fullscreenToggled()
@@ -143,10 +143,9 @@ Rectangle {
                 iconSource: "qrc:/Dbhx/icons/subtitle.svg"
                 iconColor: root.subtitleActive ? Theme.colorPrimary : "#ffffff"
                 opacity: root.subtitleLoaded ? 1 : 0.5
-                onClicked: root.subtitleLoaded ? root.subtitleToggled()
-                                               : root.subtitleLoadRequested()
+                onClicked: root.subtitleMenuRequested()
                 ToolTip.visible: hovered
-                ToolTip.text: root.subtitleLoaded ? qsTr("字幕开关") : qsTr("加载字幕 (SRT)")
+                ToolTip.text: qsTr("字幕")
             }
             AntIconButton {
                 iconSource: "qrc:/Dbhx/icons/camera.svg"

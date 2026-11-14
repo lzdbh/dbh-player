@@ -23,6 +23,9 @@ class PlayerController : public QObject
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(float playbackRate READ playbackRate WRITE setPlaybackRate NOTIFY playbackRateChanged)
     Q_PROPERTY(bool hasVideo READ hasVideo NOTIFY hasVideoChanged)
+    // Embedded subtitle tracks available for selection: list of
+    // { index: int (stream index for extraction), label: QString }.
+    Q_PROPERTY(QVariantList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
 
 public:
     explicit PlayerController(QObject *parent = nullptr);
@@ -47,6 +50,10 @@ public:
     Q_INVOKABLE void togglePlay();
     Q_INVOKABLE void stop();
     Q_INVOKABLE void seek(qint64 positionMs);
+    QVariantList subtitleTracks() const;
+    // Extract the given embedded subtitle stream index to SRT and load it.
+    Q_INVOKABLE void selectSubtitleTrack(int streamIndex);
+    Q_INVOKABLE void disableSubtitles();
 
 signals:
     void mediaPlayerChanged();
@@ -63,10 +70,17 @@ signals:
     // Emitted with a temp SRT extracted from an embedded subtitle track, so
     // the UI can render it with its own (transparent, outlined) subtitle style.
     void subtitleFileReady(const QUrl &file);
+    void subtitleTracksChanged();
+    void subtitlesCleared();
 
 private:
     void ensurePlayer();
-    void extractEmbeddedSubtitle();
+    void probeEmbeddedSubtitles();
+    void extractSubtitleStream(int streamIndex);
+
+    QVariantList m_subtitleTracks;
+    bool m_subtitleProbeDone = false;
+    QString m_extractedSubtitlePath;
 
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_audio = nullptr;
