@@ -1,5 +1,7 @@
 #include "MediaHttpServer.h"
 
+#include "Logging.h"
+
 #include <QFile>
 #include <QFileInfo>
 #include <QHostAddress>
@@ -170,6 +172,7 @@ public:
     {
         connect(m_socket, &QTcpSocket::readyRead, this, [this]() { onRequestData(); });
         connect(m_socket, &QTcpSocket::disconnected, this, [this]() {
+            qCInfo(lcHttp) << "live client disconnected" << m_socket->peerAddress().toString();
             *m_busyFlag = false;
             deleteLater();
         });
@@ -186,6 +189,8 @@ private:
             return;
         }
         const QList<QByteArray> parts = m_request.left(headerEnd).split('\n').first().trimmed().split(' ');
+        qCInfo(lcHttp) << "live request:" << m_request.left(headerEnd).split('\n').first().trimmed()
+                       << "from" << m_socket->peerAddress().toString();
         if (parts.size() < 2 || parts.at(1).split('?').first() != "/media"
             || (parts.at(0) != "GET" && parts.at(0) != "HEAD")) {
             m_socket->write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n"
@@ -194,6 +199,7 @@ private:
             return;
         }
         if (*m_busyFlag) {
+            qCWarning(lcHttp) << "live request rejected 503 (another client is streaming)";
             m_socket->write("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\n"
                             "Connection: close\r\n\r\n");
             m_socket->disconnectFromHost();

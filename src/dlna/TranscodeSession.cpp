@@ -87,9 +87,15 @@ bool TranscodeSession::start(const QString &filePath)
         return false;
 
     QStringList args;
+    // -re paces input reading to native rate so the live stream delivers
+    // smoothly (and memory stays bounded) instead of bursting ahead.
     args << QStringLiteral("-hide_banner") << QStringLiteral("-loglevel") << QStringLiteral("error")
+         << QStringLiteral("-re")
          << QStringLiteral("-i") << filePath
          << encoderArgs()
+         // Cap at 1080p: 4K H.264 is slow to encode and hard for DLNA TVs to
+         // decode, a common cause of cast stutter. Keep aspect, even height.
+         << QStringLiteral("-vf") << QStringLiteral("scale='min(1920,iw)':-2")
          << QStringLiteral("-pix_fmt") << QStringLiteral("yuv420p")
          << QStringLiteral("-c:a") << QStringLiteral("aac")
          << QStringLiteral("-b:a") << QStringLiteral("192k")

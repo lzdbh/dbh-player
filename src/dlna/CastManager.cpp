@@ -16,6 +16,7 @@ CastManager::CastManager(QObject *parent)
     connect(&m_avTransport, &AvTransportClient::uriSet, this, [this]() {
         if (!m_active)
             return;
+        qCInfo(lcCast) << "URI set on renderer, sending Play";
         m_avTransport.play();
         setPlaying(true);
         setStatus(m_transcoding ? tr("Casting (transcoded)")
@@ -29,6 +30,7 @@ CastManager::CastManager(QObject *parent)
                 if (!m_active)
                     return;
                 m_pollFailures = 0;
+                qCDebug(lcCast) << "position" << positionMs << "/" << durationMs;
                 if (m_position != positionMs) {
                     m_position = positionMs;
                     emit positionChanged();
@@ -43,13 +45,20 @@ CastManager::CastManager(QObject *parent)
             [this](const QString &state) {
                 if (!m_active)
                     return;
+                qCInfo(lcCast) << "transport state:" << state;
                 if (state == QLatin1String("PLAYING")) {
+                    m_everPlaying = true;
                     setPlaying(true);
                 } else if (state == QLatin1String("PAUSED_PLAYBACK")) {
                     setPlaying(false);
                 } else if (state == QLatin1String("STOPPED")) {
-                    setStatus(tr("Stopped on device"));
-                    disconnect();
+                    // Only treat STOPPED as end-of-session once the renderer has
+                    // actually played; during the start-up transition it may
+                    // briefly report STOPPED before PLAYING.
+                    if (m_everPlaying) {
+                        setStatus(tr("Stopped on device"));
+                        disconnect();
+                    }
                 }
             });
 
@@ -57,6 +66,7 @@ CastManager::CastManager(QObject *parent)
             [this](const QString &action, const QString &error) {
                 if (!m_active)
                     return;
+                qCWarning(lcCast) << "action failed:" << action << error;
                 // Polling failures are transient; end the session only after
                 // the renderer stays unreachable for ~10 consecutive polls.
                 if (action == QLatin1String("GetPositionInfo")
@@ -120,8 +130,12 @@ CastManager::CastManager(QObject *parent)
     });
 
     connect(&m_transcode, &TranscodeSession::errorOccurred, this, [this](const QString &message) {
+        qCWarning(lcCast) << "transcode error:" << message;
         if (m_active)
             fail(message);
+    });
+    connect(&m_transcode, &TranscodeSession::streamFinished, this, [this]() {
+        qCInfo(lcCast) << "transcode stream finished (ffmpeg reached end of file)";
     });
 }
 
@@ -153,6 +167,8 @@ void CastManager::cast(const QUrl &avTransportUrl, const QUrl &renderingControlU
     m_pendingAvt = avTransportUrl;
     m_pendingRc = renderingControlUrl;
     m_deviceName = deviceName;
+    m_everPlaying = false;
+    m_pollFailures = 0;
     emit deviceNameChanged();
     m_position = 0;
     m_duration = 0;
@@ -177,6 +193,8 @@ void CastManager::beginPush(const QUrl &mediaUrl, const QString &title,
     }
     setStatus(m_transcoding ? tr("Casting (transcoded)")
                             : tr("Connecting to %1...").arg(m_deviceName));
+    qCInfo(lcCast) << "SetAVTransportURI" << mediaUrl.toString() << "mime" << mimeType
+                   << "live" << live << "size" << sizeBytes;
     m_avTransport.setUri(mediaUrl, title, mimeType, sizeBytes, live);
 }
 
@@ -223,6 +241,7 @@ void CastManager::disconnect()
 {
     if (!m_active)
         return;
+    qCInfo(lcCast) << "disconnecting cast session (everPlaying=" << m_everPlaying << ")";
     m_pollTimer.stop();
     m_avTransport.stop();
     m_server.stop();

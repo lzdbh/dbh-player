@@ -78,6 +78,7 @@ private:
     bool m_active = false;
     bool m_playing = false;
     bool m_transcoding = false;
+    bool m_everPlaying = false;
     QString m_deviceName;
     QString m_status;
     qint64 m_position = 0;

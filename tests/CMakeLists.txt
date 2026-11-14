@@ -14,8 +14,11 @@ qt_add_executable(dlnatest
     ${CMAKE_SOURCE_DIR}/src/dlna/SoapClient.cpp
     ${CMAKE_SOURCE_DIR}/src/dlna/AvTransportClient.cpp
     ${CMAKE_SOURCE_DIR}/src/dlna/MediaHttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/app/Logging.cpp
 )
-target_include_directories(dlnatest PRIVATE ${CMAKE_SOURCE_DIR}/src/dlna)
+target_include_directories(dlnatest PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/dlna
+    ${CMAKE_SOURCE_DIR}/src/app)
 target_link_libraries(dlnatest PRIVATE Qt6::Core Qt6::Network Qt6::Test)
 
 add_test(NAME playertest COMMAND playertest)
