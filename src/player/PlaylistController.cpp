@@ -19,7 +19,7 @@ QVariant PlaylistController::data(const QModelIndex &index, int role) const
     const QUrl &url = m_urls.at(index.row());
     switch (role) {
     case UrlRole: return url;
-    case TitleRole: return QFileInfo(url.toLocalFile()).completeBaseName();
+    case TitleRole: return QFileInfo(url.toLocalFile()).fileName();
     case CurrentRole: return index.row() == m_currentIndex;
     default: return {};
     }

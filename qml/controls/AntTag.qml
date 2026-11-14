@@ -12,14 +12,14 @@ Rectangle {
                               : tone === "error" ? Theme.colorError
                               : tone === "default" ? Theme.colorTextSecondary
                               : Theme.colorPrimary
-    readonly property color bg: tone === "success" ? "#f6ffed"
-                              : tone === "warning" ? "#fffbe6"
+    readonly property color bg: tone === "success" ? "#52c41a22"
+                              : tone === "warning" ? "#faad1422"
                               : tone === "error" ? Theme.colorErrorBg
                               : tone === "default" ? Theme.colorFillTertiary
                               : Theme.colorPrimaryBg
-    readonly property color borderColor: tone === "success" ? "#b7eb8f"
-                                       : tone === "warning" ? "#ffe58f"
-                                       : tone === "error" ? "#ffccc7"
+    readonly property color borderColor: tone === "success" ? "#52c41a55"
+                                       : tone === "warning" ? "#faad1455"
+                                       : tone === "error" ? "#ff6b6b55"
                                        : tone === "default" ? Theme.colorBorder
                                        : Theme.colorPrimaryBorder
 
