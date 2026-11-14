@@ -5,6 +5,10 @@ import QtQuick.Controls
 MenuItem {
     id: root
 
+    // The custom contentItem below draws its own checkmark; disable the
+    // default indicator so a checked item doesn't show two checkmarks.
+    indicator: null
+
     implicitHeight: 32
     padding: 0
     leftPadding: 12
