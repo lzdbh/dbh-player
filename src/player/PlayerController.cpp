@@ -2,7 +2,11 @@
 
 #include "Logging.h"
 
+#include <QDir>
+#include <QFileInfo>
 #include <QMediaMetaData>
+#include <QProcess>
+#include <QStandardPaths>
 
 PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
@@ -34,23 +38,14 @@ void PlayerController::ensurePlayer()
             emit endOfMedia();
     });
     connect(m_player, &QMediaPlayer::tracksChanged, this, [this]() {
-        // Embedded subtitle tracks (e.g. muxed into MKV) appear here once the
-        // media is loaded. Prefer a Chinese track; otherwise use the first.
+        // For embedded subtitle tracks we disable Qt's baked-in rendering
+        // (opaque background) and instead extract the Chinese track to SRT so
+        // the UI renders it with its own transparent, outlined style.
         const auto subs = m_player->subtitleTracks();
-        if (!subs.isEmpty() && m_player->activeSubtitleTrack() < 0) {
-            int chosen = 0;
-            for (int i = 0; i < subs.size(); ++i) {
-                const QString lang = subs.at(i).stringValue(QMediaMetaData::Language);
-                if (lang.startsWith(QLatin1String("zh"), Qt::CaseInsensitive)
-                    || lang.startsWith(QLatin1String("chi"), Qt::CaseInsensitive)) {
-                    chosen = i;
-                    break;
-                }
-            }
-            qCInfo(lcPlayer) << "subtitle tracks:" << subs.size() << "chosen" << chosen
-                             << "lang" << subs.at(chosen).stringValue(QMediaMetaData::Language)
-                             << "title" << subs.at(chosen).stringValue(QMediaMetaData::Title);
-            m_player->setActiveSubtitleTrack(chosen);
+        if (!subs.isEmpty() && !m_subtitleExtractDone) {
+            m_subtitleExtractDone = true;
+            m_player->setActiveSubtitleTrack(-1);
+            extractEmbeddedSubtitle();
         }
     });
     connect(m_player, &QMediaPlayer::tracksChanged, this, [this]() {
@@ -84,6 +79,7 @@ void PlayerController::setSource(const QUrl &url)
     ensurePlayer();
     if (m_player->source() == url)
         return;
+    m_subtitleExtractDone = false;
     m_player->setSource(url);
     emit sourceChanged();
 }
@@ -182,4 +178,63 @@ void PlayerController::seek(qint64 positionMs)
 {
     if (m_player)
         m_player->setPosition(positionMs);
+}
+
+// Extracts the Chinese embedded subtitle track to a temp SRT (via ffprobe +
+// ffmpeg) and emits subtitleFileReady so the UI renders it with its own style.
+void PlayerController::extractEmbeddedSubtitle()
+{
+    const QString file = m_player->source().toLocalFile();
+    const QString ffprobe = QStandardPaths::findExecutable(QStringLiteral("ffprobe"));
+    const QString ffmpeg = QStandardPaths::findExecutable(QStringLiteral("ffmpeg"));
+    if (file.isEmpty() || ffprobe.isEmpty() || ffmpeg.isEmpty())
+        return;
+    qCInfo(lcPlayer) << "subtitle tools: ffprobe=" << ffprobe << "ffmpeg=" << ffmpeg;
+
+    auto *probe = new QProcess(this);
+    connect(probe, &QProcess::finished, this, [this, probe, file, ffmpeg](int) {
+        const QString out = QString::fromUtf8(probe->readAllStandardOutput());
+        probe->deleteLater();
+        int chinese = -1, first = -1;
+        const QStringList lines = out.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+        for (const QString &line : lines) {
+            const QStringList parts = line.trimmed().split(QLatin1Char(','));
+            if (parts.size() < 2)
+                continue;
+            const int idx = parts.at(0).toInt();
+            const QString lang = parts.at(1).trimmed().toLower();
+            if (first < 0)
+                first = idx;
+            if (chinese < 0 && (lang.startsWith(QLatin1String("chi"))
+                                || lang.startsWith(QLatin1String("zh")))) {
+                chinese = idx;
+            }
+        }
+        const int track = chinese >= 0 ? chinese : first;
+        if (track < 0)
+            return;
+        qCInfo(lcPlayer) << "extracting embedded subtitle stream" << track << "from" << file;
+        const QString outPath = QDir::tempPath() + QStringLiteral("/dbhx-subtitle.srt");
+        auto *ex = new QProcess(this);
+        connect(ex, &QProcess::finished, this, [this, ex, outPath](int rc) {
+            ex->deleteLater();
+            if (rc == 0 && QFileInfo::exists(outPath)) {
+                emit subtitleFileReady(QUrl::fromLocalFile(outPath));
+            } else {
+                qCWarning(lcPlayer) << "subtitle extraction failed:" << ex->readAllStandardError().left(200);
+            }
+        });
+        ex->start(ffmpeg, {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"),
+                           QStringLiteral("error"), QStringLiteral("-y"),
+                           QStringLiteral("-i"), file,
+                           QStringLiteral("-map"), QStringLiteral("0:%1").arg(track),
+                           QStringLiteral("-c:s"), QStringLiteral("srt"), outPath});
+        connect(ex, &QProcess::errorOccurred, this, [](QProcess::ProcessError e) {
+            qCWarning(lcPlayer) << "subtitle ffmpeg process error" << e;
+        });
+    });
+    probe->start(ffprobe, {QStringLiteral("-v"), QStringLiteral("quiet"),
+                           QStringLiteral("-select_streams"), QStringLiteral("s"),
+                           QStringLiteral("-show_entries"), QStringLiteral("stream=index:stream_tags=language"),
+                           QStringLiteral("-of"), QStringLiteral("csv=p=0"), file});
 }

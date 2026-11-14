@@ -39,9 +39,19 @@ Item {
         })
     }
 
+    // Black backdrop so the letterbox area around the video is black, not the
+    // window background.
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+    }
+
     VideoOutput {
         id: videoSurface
         anchors.fill: parent
+        // Reserve the control bar's height so the video is vertically centered
+        // in the visible area above the control bar.
+        anchors.bottomMargin: controlBar.height
         fillMode: VideoOutput.PreserveAspectFit
     }
 

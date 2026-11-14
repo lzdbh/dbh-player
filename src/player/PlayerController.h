@@ -60,13 +60,18 @@ signals:
     void playbackRateChanged();
     void hasVideoChanged();
     void errorOccurred(const QString &message);
+    // Emitted with a temp SRT extracted from an embedded subtitle track, so
+    // the UI can render it with its own (transparent, outlined) subtitle style.
+    void subtitleFileReady(const QUrl &file);
 
 private:
     void ensurePlayer();
+    void extractEmbeddedSubtitle();
 
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_audio = nullptr;
     float m_volume = 1.0f;
     float m_rate = 1.0f;
     bool m_muted = false;
+    bool m_subtitleExtractDone = false;
 };

@@ -52,6 +52,10 @@ ApplicationWindow {
             if (source.toString() !== "" && subtitles.autoLoadFor(source))
                 toast.show(qsTr("已自动加载字幕: ") + subtitles.fileName, "success")
         }
+        onSubtitleFileReady: (file) => {
+            if (subtitles.load(file))
+                toast.show(qsTr("已加载内嵌字幕"), "success")
+        }
     }
 
     PlaylistController {
