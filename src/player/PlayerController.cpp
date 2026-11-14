@@ -1,5 +1,9 @@
 #include "PlayerController.h"
 
+#include "Logging.h"
+
+#include <QMediaMetaData>
+
 PlayerController::PlayerController(QObject *parent)
     : QObject(parent)
 {
@@ -28,6 +32,30 @@ void PlayerController::ensurePlayer()
     connect(m_player, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
         if (status == QMediaPlayer::EndOfMedia)
             emit endOfMedia();
+    });
+    connect(m_player, &QMediaPlayer::tracksChanged, this, [this]() {
+        // Embedded subtitle tracks (e.g. muxed into MKV) appear here once the
+        // media is loaded. Prefer a Chinese track; otherwise use the first.
+        const auto subs = m_player->subtitleTracks();
+        if (!subs.isEmpty() && m_player->activeSubtitleTrack() < 0) {
+            int chosen = 0;
+            for (int i = 0; i < subs.size(); ++i) {
+                const QString lang = subs.at(i).stringValue(QMediaMetaData::Language);
+                if (lang.startsWith(QLatin1String("zh"), Qt::CaseInsensitive)
+                    || lang.startsWith(QLatin1String("chi"), Qt::CaseInsensitive)) {
+                    chosen = i;
+                    break;
+                }
+            }
+            qCInfo(lcPlayer) << "subtitle tracks:" << subs.size() << "chosen" << chosen
+                             << "lang" << subs.at(chosen).stringValue(QMediaMetaData::Language)
+                             << "title" << subs.at(chosen).stringValue(QMediaMetaData::Title);
+            m_player->setActiveSubtitleTrack(chosen);
+        }
+    });
+    connect(m_player, &QMediaPlayer::tracksChanged, this, [this]() {
+        qCInfo(lcPlayer) << "tracksChanged: subtitleTracks=" << m_player->subtitleTracks().size()
+                         << "active=" << m_player->activeSubtitleTrack();
     });
     connect(m_player, &QMediaPlayer::errorOccurred, this,
             [this](QMediaPlayer::Error, const QString &message) { emit errorOccurred(message); });
