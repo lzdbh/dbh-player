@@ -215,6 +215,16 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 - **M6**：`Logging`（stderr + AppData/logs 轮转 5 份）、QSettings（音量/静音/倍速/窗口几何）、i18n（中文源 + `translations/dbhx_en.ts` 86 条全译，随系统语言切换）、`tests/`（playertest + dlnatest 共 11 例，ctest 全过）、投屏轮询连续 10 次失败才断开。
 - **待用户验收**：真机投屏回归（M3 转码路径在真电视上的表现）、托盘图标、设置持久化手感。Windows 全量回归。
 
+## 9c. libmpv 内核升级实验（2026-11-14，已回退）
+
+- **动机**：FFmpeg 后端播 4K HEVC 偶尔音画卡顿，尝试升级 libmpv（硬解+帧同步）。
+- **完整实现在 `libmpv-experiment` 分支**（MpvPlayer + MpvVideoItem + 源码构建的 libmpv + `scripts/build-libmpv.sh`）。main 已回退到 FFmpeg 后端（速率正常、功能完整）。
+- **实验结论（本机 Intel + macOS 26）**：
+  - libmpv 需源码构建（brew 无 x86_64 bottle、stolendata 不可达、CI 包是静态 mpv）；mpv≥0.42 强制 libass；cocoa/swift 原生 VO 在新 SDK 编不过。
+  - **coreaudio 两个坑**：① OpenGL render API 会死锁 coreaudio → 须用 SW 渲染 API；② verbose 日志（`mpv_request_log_messages "v"`）触发 `ca_select_device` 空指针崩溃 → 日志用 "info"；③ 默认音频缓冲太小使音频时钟偏慢（~0.8x）→ `audio-buffer=0.5` 修复。
+  - **未解决的致命问题**：mpv **渲染 API 在本机持续慢放**——SW 渲染稳定 ~0.5x（与分辨率/线程/驱动方式无关），OpenGL basic 循环慢、threaded 循环崩溃（NSOpenGLContext 须主线程）。独立 mpv 程序亦复现，属该构建+本机渲染 API 的深层时序问题。
+- **决定**：回退 FFmpeg 后端（用户确认）。libmpv 留分支待后续研究（可能需 universal/不同构建或上游修复）。
+
 ## 10. Git 状态与跨机同步
 
 - **remote**：`origin = https://github.com/lzdbh/dbh-player.git`，`main` 跟踪 `origin/main`。
