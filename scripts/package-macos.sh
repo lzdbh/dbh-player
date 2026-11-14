@@ -11,15 +11,21 @@ VERSION=$(grep -m1 -E '^[[:space:]]+VERSION [0-9]' CMakeLists.txt | sed -E 's/.*
 BUILD_DIR=build-release
 OUT_DIR=dist
 
+# NOTE: libmpv (third_party/libmpv) is currently x86_64-only, so the package
+# is x86_64. A universal package requires a universal libmpv build.
 cmake -S . -B "$BUILD_DIR" -G Ninja \
   -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+  -DCMAKE_OSX_ARCHITECTURES="x86_64"
 cmake --build "$BUILD_DIR"
 
 "$QT_PREFIX/bin/macdeployqt" "$BUILD_DIR/dbhx-player.app" -qmldir=qml
 # SQL drivers are unused and reference missing system libs; drop them.
 rm -rf "$BUILD_DIR/dbhx-player.app/Contents/PlugIns/sqldrivers"
+# Bundle libmpv (macdeployqt does not know about it) and sign it.
+mkdir -p "$BUILD_DIR/dbhx-player.app/Contents/Frameworks"
+cp third_party/libmpv/lib/libmpv.2.dylib "$BUILD_DIR/dbhx-player.app/Contents/Frameworks/"
+codesign --force -s - "$BUILD_DIR/dbhx-player.app/Contents/Frameworks/libmpv.2.dylib"
 # macdeployqt rewrites binaries; re-apply the ad-hoc signature (required for
 # local network / SSDP, see HANDOVER pitfall #9).
 codesign --force --deep -s - "$BUILD_DIR/dbhx-player.app"

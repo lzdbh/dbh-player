@@ -42,7 +42,7 @@ ApplicationWindow {
         }
     }
 
-    PlayerController {
+    MpvPlayer {
         id: playerController
         objectName: "playerController"
         onErrorOccurred: (message) => toast.show(qsTr("播放错误: ") + message, "error")

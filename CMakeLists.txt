@@ -8,9 +8,17 @@ project(dbhx-player
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network Widgets Core5Compat LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Multimedia Network Widgets Core5Compat LinguistTools OpenGL)
 
 qt_standard_project_setup()
+
+# libmpv playback backend (prebuilt). Headers in third_party/libmpv/include,
+# the dylib (and any bundled dependencies) in third_party/libmpv/lib.
+set(LIBMPV_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmpv)
+add_library(libmpv SHARED IMPORTED)
+set_target_properties(libmpv PROPERTIES
+    IMPORTED_LOCATION ${LIBMPV_ROOT}/lib/libmpv.dylib
+    INTERFACE_INCLUDE_DIRECTORIES ${LIBMPV_ROOT}/include)
 
 qt_add_executable(dbhx-player
     src/main.cpp
@@ -112,6 +120,10 @@ qt_add_qml_module(dbhx-player
         src/player/PlaylistController.cpp
         src/player/SubtitleTrack.h
         src/player/SubtitleTrack.cpp
+        src/player/MpvPlayer.h
+        src/player/MpvPlayer.cpp
+        src/player/MpvVideoItem.h
+        src/player/MpvVideoItem.cpp
         src/dlna/SsdpDiscovery.h
         src/dlna/SsdpDiscovery.cpp
         src/dlna/DeviceParser.h
@@ -143,7 +155,15 @@ target_link_libraries(dbhx-player PRIVATE
     Qt6::Network
     Qt6::Widgets
     Qt6::Core5Compat
+    Qt6::OpenGL
+    libmpv
+    "-framework CoreFoundation"
 )
+
+# Resolve bundled libmpv (and its dependencies) from the app's Frameworks dir.
+set_target_properties(dbhx-player PROPERTIES
+    BUILD_RPATH "@executable_path/../Frameworks;${LIBMPV_ROOT}/lib"
+    INSTALL_RPATH "@executable_path/../Frameworks")
 
 # The generated QML type registration includes each header via __has_include,
 # so the header directories must be on the include path.

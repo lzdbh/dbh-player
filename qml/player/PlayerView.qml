@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtMultimedia
 import QtQuick.Dialogs
 
 Item {
@@ -39,18 +38,10 @@ Item {
         })
     }
 
-    VideoOutput {
+    MpvVideoItem {
         id: videoSurface
         anchors.fill: parent
-        fillMode: VideoOutput.PreserveAspectFit
-    }
-
-    Connections {
-        target: root.player
-        function onMediaPlayerChanged() {
-            if (root.player.mediaPlayer)
-                root.player.mediaPlayer.videoOutput = videoSurface
-        }
+        player: root.player
     }
 
     DropArea {

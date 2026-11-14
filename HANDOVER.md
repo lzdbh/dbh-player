@@ -183,6 +183,10 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 14. **macOS QLocale::system() 受 bundle 本地化声明影响**：Info.plist 只写 `CFBundleDevelopmentRegion=en` 时，中文系统也返回 en_CN。必须加 `CFBundleLocalizations=[zh-Hans,en]`（已加）。另：`-AppleLanguages "(en)"` 启动参数会被 macOS **持久化**到应用 prefs，测完要 `defaults delete com.dbhx.player AppleLanguages`。
 15. **Qt Test 里 QTcpServer 需要事件循环**：客户端 `waitForReadyRead` 不派发其他 socket 的通知，服务端永远 accept 不了。测试里要 `QCoreApplication::processEvents` 泵循环（见 tests/dlnatest.cpp）。
 16. **自定义 Button 宽度**：Basic 样式默认 padding 与 implicitWidth 公式不一致会差 1px 导致文字省略号。AntButton 用 TextMetrics + 显式 padding 解决；图标按钮记得设 `Accessible.name`（UI 自动化/无障碍都靠它）。
+17. **libmpv + macOS coreaudio 两个致命坑**（升级 libmpv 内核时踩到）：
+    - **OpenGL 渲染 API 会死锁 coreaudio**：`vo=libmpv` 用 OpenGL render API（libplacebo GL 初始化）时，coreaudio 音频初始化永久阻塞。**改用 SW 软件渲染 API**（`MPV_RENDER_API_TYPE_SW`，mpv 输出 RGBA 到内存缓冲，QQuickPaintedItem 绘制）即解决，音视频都正常。
+    - **verbose 日志触发 coreaudio 空指针崩溃**：`mpv_request_log_messages(mpv, "v")` 会让 `ca_select_device` 走 `CA_GET_STR` 取设备名，在 Qt GUI 进程里空指针解引用崩溃（SIGSEGV）。**日志级别用 "info" 或更低**即可避开（该代码只在 MSGL_V 下执行）。
+    - libmpv 预编译库在 `third_party/libmpv/`（x86_64，ffmpeg/libplacebo/libass 静态链入，仅依赖系统框架）；重建见 `scripts/build-libmpv.sh`。mpv≥0.42 强制依赖 libass；cocoa/swift 原生 VO 在新 SDK 编不过，已禁用（视频走 render API）。
 
 ## 8. DLNA 投屏架构
 
@@ -214,6 +218,15 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 - **M5**：`scripts/package-macos.sh` 一键出 universal .app + .dmg（macdeployqt 后**删 sqldrivers 再 ad-hoc 重签**）；`dist/dbhx-player-0.1.0-macos-universal.dmg` 已挂载实测可播。Windows 用 `scripts/package-windows.bat`（未跑）。
 - **M6**：`Logging`（stderr + AppData/logs 轮转 5 份）、QSettings（音量/静音/倍速/窗口几何）、i18n（中文源 + `translations/dbhx_en.ts` 86 条全译，随系统语言切换）、`tests/`（playertest + dlnatest 共 11 例，ctest 全过）、投屏轮询连续 10 次失败才断开。
 - **待用户验收**：真机投屏回归（M3 转码路径在真电视上的表现）、托盘图标、设置持久化手感。Windows 全量回归。
+
+## 9c. 播放内核升级 libmpv（2026-11-14，解决本机 4K 卡顿）
+
+- **动机**：Qt Multimedia FFmpeg 后端播 4K HEVC 偶尔音画卡顿。升级 libmpv（硬解 + 优秀帧同步）。
+- **实现**：`src/player/MpvPlayer`（mpv 核心，主线程 + QTimer 轮询事件队列）+ `MpvVideoItem`（QQuickPaintedItem + **SW 渲染 API**）。QML 用 MpvPlayer/MpvVideoItem 替换 PlayerController/VideoOutput，对外属性/信号 API 保持一致（播放列表/字幕/投屏不受影响）。旧 `PlayerController` 暂保留未用。
+- **获取库**：brew 无 x86_64 bottle、stolendata 不可达、CI 包是静态 mpv（无 libmpv）→ **从源码构建**（`scripts/build-libmpv.sh`，ffmpeg/libplacebo/libass 静态链入）。预编译 dylib 已提交到 `third_party/libmpv/`。
+- **关键坑**：见坑#17（OpenGL render API 死锁 coreaudio → 用 SW 渲染；verbose 日志触发 coreaudio 崩溃 → 日志用 info）。
+- **验证**：4K HEVC mkv 音画正常播放、暂停/seek/进度/音量均生效；单元测试全过；release dmg 独立运行通过。
+- **注意**：libmpv 当前 x86_64 单架构 → release 包为 x86_64（universal 需 universal libmpv）。SW 渲染 4K 时 CPU 约 30%（可后续按需降渲染分辨率优化）。
 
 ## 10. Git 状态与跨机同步
 

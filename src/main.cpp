@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QSystemTrayIcon>
 #include <QTranslator>
 #include <QUrl>
