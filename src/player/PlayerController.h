@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAudioOutput>
+#include <QElapsedTimer>
 #include <QMediaPlayer>
 #include <QObject>
 #include <QUrl>
@@ -66,6 +67,7 @@ private:
 
     QMediaPlayer *m_player = nullptr;
     QAudioOutput *m_audio = nullptr;
+    QElapsedTimer m_posClock;
     float m_volume = 1.0f;
     float m_rate = 1.0f;
     bool m_muted = false;

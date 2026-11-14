@@ -61,6 +61,10 @@ int main(int argc, char *argv[])
     // Basic style gives us full control over the custom, per-platform theming.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
+    // Threaded scene-graph render loop presents video on a dedicated thread at
+    // display vsync (Metal), avoiding main-thread stalls that cause A/V stutter.
+    qputenv("QSG_RENDER_LOOP", "threaded");
+
     // Optional file path arguments: open them on startup (file association /
     // CLI). Skip option-style args such as -AppleLanguages.
     QStringList initialFiles;

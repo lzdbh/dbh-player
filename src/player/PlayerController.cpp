@@ -19,7 +19,13 @@ void PlayerController::ensurePlayer()
 
     connect(m_player, &QMediaPlayer::playbackStateChanged, this,
             [this](QMediaPlayer::PlaybackState) { emit playingChanged(); });
-    connect(m_player, &QMediaPlayer::positionChanged, this, &PlayerController::positionChanged);
+    connect(m_player, &QMediaPlayer::positionChanged, this, [this](qint64) {
+        // Throttle UI position updates to ~30Hz to keep the GUI thread light.
+        if (!m_posClock.isValid() || m_posClock.elapsed() >= 33) {
+            m_posClock.restart();
+            emit positionChanged();
+        }
+    });
     connect(m_player, &QMediaPlayer::durationChanged, this, &PlayerController::durationChanged);
     connect(m_player, &QMediaPlayer::hasVideoChanged, this, &PlayerController::hasVideoChanged);
     connect(m_player, &QMediaPlayer::playbackRateChanged, this, &PlayerController::playbackRateChanged);
