@@ -129,7 +129,6 @@ Rectangle {
                         AntMenuItem {
                             required property var modelData
                             text: modelData + "x"
-                            checkable: true
                             checked: Math.abs(root.player.playbackRate - modelData) < 0.01
                             onTriggered: root.player.playbackRate = modelData
                         }

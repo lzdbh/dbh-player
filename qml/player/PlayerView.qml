@@ -175,6 +175,7 @@ Item {
             AntMenuItem {
                 required property var modelData
                 text: modelData.label
+                checked: root.player.selectedSubtitleIndex === modelData.index
                 onTriggered: root.player.selectSubtitleTrack(modelData.index)
             }
         }
@@ -186,6 +187,7 @@ Item {
         MenuSeparator {}
         AntMenuItem {
             text: qsTr("关闭字幕")
+            checked: !(root.subtitles && root.subtitles.loaded)
             enabled: root.subtitles && root.subtitles.loaded
             onTriggered: root.player.disableSubtitles()
         }
@@ -226,7 +228,6 @@ Item {
                 AntMenuItem {
                     required property var modelData
                     text: modelData + "x"
-                    checkable: true
                     checked: Math.abs(root.player.playbackRate - modelData) < 0.01
                     onTriggered: root.player.playbackRate = modelData
                 }

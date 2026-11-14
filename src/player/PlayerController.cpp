@@ -78,6 +78,10 @@ void PlayerController::setSource(const QUrl &url)
     m_subtitleProbeDone = false;
     m_subtitleTracks.clear();
     m_extractedSubtitlePath.clear();
+    if (m_selectedSubtitleIndex != -1) {
+        m_selectedSubtitleIndex = -1;
+        emit selectedSubtitleIndexChanged();
+    }
     emit subtitleTracksChanged();
     m_player->setSource(url);
     emit sourceChanged();
@@ -188,11 +192,19 @@ void PlayerController::disableSubtitles()
 {
     if (m_player)
         m_player->setActiveSubtitleTrack(-1);
+    if (m_selectedSubtitleIndex != -1) {
+        m_selectedSubtitleIndex = -1;
+        emit selectedSubtitleIndexChanged();
+    }
     emit subtitlesCleared();
 }
 
 void PlayerController::selectSubtitleTrack(int streamIndex)
 {
+    if (m_selectedSubtitleIndex != streamIndex) {
+        m_selectedSubtitleIndex = streamIndex;
+        emit selectedSubtitleIndexChanged();
+    }
     extractSubtitleStream(streamIndex);
 }
 
@@ -234,6 +246,8 @@ void PlayerController::probeEmbeddedSubtitles()
         if (!m_subtitleTracks.isEmpty()) {
             const int pick = chinese >= 0 ? chinese
                                           : m_subtitleTracks.first().toMap().value(QStringLiteral("index")).toInt();
+            m_selectedSubtitleIndex = pick;
+            emit selectedSubtitleIndexChanged();
             extractSubtitleStream(pick);
         }
     });

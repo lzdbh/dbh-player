@@ -26,6 +26,8 @@ class PlayerController : public QObject
     // Embedded subtitle tracks available for selection: list of
     // { index: int (stream index for extraction), label: QString }.
     Q_PROPERTY(QVariantList subtitleTracks READ subtitleTracks NOTIFY subtitleTracksChanged)
+    // Stream index of the currently selected embedded subtitle track, -1 = off.
+    Q_PROPERTY(int selectedSubtitleIndex READ selectedSubtitleIndex NOTIFY selectedSubtitleIndexChanged)
 
 public:
     explicit PlayerController(QObject *parent = nullptr);
@@ -51,6 +53,7 @@ public:
     Q_INVOKABLE void stop();
     Q_INVOKABLE void seek(qint64 positionMs);
     QVariantList subtitleTracks() const;
+    int selectedSubtitleIndex() const { return m_selectedSubtitleIndex; }
     // Extract the given embedded subtitle stream index to SRT and load it.
     Q_INVOKABLE void selectSubtitleTrack(int streamIndex);
     Q_INVOKABLE void disableSubtitles();
@@ -71,6 +74,7 @@ signals:
     // the UI can render it with its own (transparent, outlined) subtitle style.
     void subtitleFileReady(const QUrl &file);
     void subtitleTracksChanged();
+    void selectedSubtitleIndexChanged();
     void subtitlesCleared();
 
 private:
@@ -79,6 +83,7 @@ private:
     void extractSubtitleStream(int streamIndex);
 
     QVariantList m_subtitleTracks;
+    int m_selectedSubtitleIndex = -1;
     bool m_subtitleProbeDone = false;
     QString m_extractedSubtitlePath;
 
