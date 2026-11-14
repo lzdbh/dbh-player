@@ -40,6 +40,14 @@ int main(int argc, char *argv[])
     if (qEnvironmentVariableIsEmpty("QT_MEDIA_BACKEND"))
         qputenv("QT_MEDIA_BACKEND", "windows");
 #endif
+#if defined(Q_OS_MACOS) && defined(Q_PROCESSOR_X86_64)
+    // On Intel Macs the FFmpeg backend's VideoToolbox hwaccel path copies
+    // frames back to CPU and caps delivery (~16fps for 1080p/4K), causing
+    // stutter. Software decoding sustains the full frame rate (measured 25fps
+    // for 4K HEVC at ~34% CPU) and is smooth. Disable hwaccel unless overridden.
+    if (qEnvironmentVariableIsEmpty("QT_FFMPEG_DECODING_HW_DEVICE_TYPES"))
+        qputenv("QT_FFMPEG_DECODING_HW_DEVICE_TYPES", "none");
+#endif
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("DBHX Player"));
