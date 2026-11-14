@@ -232,6 +232,6 @@ ApplicationWindow {
             qsTr("视频文件 (*.mp4 *.mkv *.avi *.mov *.flv *.wmv *.ts *.webm *.m4v *.mpg *.mpeg)"),
             qsTr("所有文件 (*)")
         ]
-        onAccepted: playlist.addUrls(selectedFiles)
+        onAccepted: playlist.addAndPlay(selectedFiles)
     }
 }

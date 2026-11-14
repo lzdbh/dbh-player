@@ -12,6 +12,7 @@ private slots:
     void srtEncodingGb18030();
     void srtAutoLoad();
     void playlistAdvanceAndRemove();
+    void playlistAddAndPlay();
 };
 
 void PlayerTest::srtParseAndLookup()
@@ -102,6 +103,30 @@ void PlayerTest::playlistAdvanceAndRemove()
     list.clear();
     QCOMPARE(list.count(), 0);
     QCOMPARE(list.currentIndex(), -1);
+}
+
+void PlayerTest::playlistAddAndPlay()
+{
+    PlaylistController list;
+    QSignalSpy openSpy(&list, &PlaylistController::requestOpen);
+    list.addUrls({QUrl("file:///a.mp4")});
+    QCOMPARE(list.currentIndex(), 0);
+    QCOMPARE(openSpy.count(), 1);
+
+    // Opening a new file while one is loaded must play the new file,
+    // not merely append it (regression: "Open File" appeared unresponsive).
+    list.addAndPlay({QUrl("file:///b.mp4"), QUrl("file:///c.mp4")});
+    QCOMPARE(list.count(), 3);
+    QCOMPARE(list.currentIndex(), 1);
+    QCOMPARE(openSpy.count(), 2);
+    QCOMPARE(openSpy.last().at(0).toUrl(), QUrl("file:///b.mp4"));
+
+    // Empty list: addAndPlay plays the first file too.
+    PlaylistController empty;
+    QSignalSpy emptySpy(&empty, &PlaylistController::requestOpen);
+    empty.addAndPlay({QUrl("file:///x.mp4")});
+    QCOMPARE(empty.currentIndex(), 0);
+    QCOMPARE(emptySpy.count(), 1);
 }
 
 QTEST_MAIN(PlayerTest)

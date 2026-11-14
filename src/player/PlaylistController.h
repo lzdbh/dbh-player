@@ -26,6 +26,8 @@ public:
     int count() const;
 
     Q_INVOKABLE void addUrls(const QList<QUrl> &urls);
+    // Append and immediately play the first newly added file (Open File / drop).
+    Q_INVOKABLE void addAndPlay(const QList<QUrl> &urls);
     Q_INVOKABLE void removeAt(int index);
     Q_INVOKABLE void clear();
     Q_INVOKABLE void playAt(int index);

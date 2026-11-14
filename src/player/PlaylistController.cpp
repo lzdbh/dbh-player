@@ -45,6 +45,19 @@ void PlaylistController::addUrls(const QList<QUrl> &urls)
         playAt(0);
 }
 
+void PlaylistController::addAndPlay(const QList<QUrl> &urls)
+{
+    if (urls.isEmpty())
+        return;
+    const int firstNew = m_urls.size();
+    const bool wasEmpty = m_urls.isEmpty();
+    addUrls(urls);
+    // addUrls already starts playback when the list was empty; otherwise
+    // explicitly play the first newly added file.
+    if (!wasEmpty)
+        playAt(firstNew);
+}
+
 void PlaylistController::removeAt(int index)
 {
     if (index < 0 || index >= m_urls.size())

@@ -58,7 +58,7 @@ Item {
         onDropped: (drop) => {
             if (drop.hasUrls) {
                 if (root.playlist)
-                    root.playlist.addUrls(drop.urls)
+                    root.playlist.addAndPlay(drop.urls)
                 else
                     root.player.open(drop.urls[0])
             }
@@ -223,7 +223,7 @@ Item {
         ]
         onAccepted: {
             if (root.playlist)
-                root.playlist.addUrls(selectedFiles)
+                root.playlist.addAndPlay(selectedFiles)
             else if (selectedFiles.length > 0)
                 root.player.open(selectedFiles[0])
         }
