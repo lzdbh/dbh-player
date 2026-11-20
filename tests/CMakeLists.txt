@@ -14,6 +14,7 @@ qt_add_executable(dlnatest
     ${CMAKE_SOURCE_DIR}/src/dlna/SoapClient.cpp
     ${CMAKE_SOURCE_DIR}/src/dlna/AvTransportClient.cpp
     ${CMAKE_SOURCE_DIR}/src/dlna/MediaHttpServer.cpp
+    ${CMAKE_SOURCE_DIR}/src/dlna/TranscodeSession.cpp
     ${CMAKE_SOURCE_DIR}/src/app/Logging.cpp
 )
 target_include_directories(dlnatest PRIVATE

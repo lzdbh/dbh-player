@@ -2,9 +2,12 @@
 
 #include <QObject>
 #include <QProcess>
+#include <QTcpServer>
+#include <QTcpSocket>
 
 // Runs ffmpeg to transcode a local file into a live H.264+AAC MPEG-TS stream
-// on stdout, for renderers that cannot play the original format directly.
+// over a loopback TCP connection, for renderers that cannot play the original
+// format directly. TCP flow control bounds memory when the TV reads slowly.
 class TranscodeSession : public QObject
 {
     Q_OBJECT
@@ -17,7 +20,7 @@ public:
     void stop();
     bool isRunning() const;
 
-    // Read side of the MPEG-TS stream (the QProcess stdout channel).
+    // Read side of the MPEG-TS stream (loopback socket fed by ffmpeg).
     QIODevice *stream();
 
     static QString ffmpegPath();
@@ -30,5 +33,7 @@ private:
     static QStringList encoderArgs();
 
     QProcess m_process;
+    QTcpServer m_outputServer;
+    QTcpSocket *m_socket = nullptr;
     bool m_stopping = false;
 };

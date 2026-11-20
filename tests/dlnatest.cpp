@@ -3,9 +3,12 @@
 #include "AvTransportClient.h"
 #include "MediaHttpServer.h"
 #include "SoapClient.h"
+#include "TranscodeSession.h"
 
+#include <QProcess>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QTemporaryDir>
 
 class DlnaTest : public QObject
 {
@@ -16,6 +19,7 @@ private slots:
     void xmlEscape();
     void soapSuccessAndFault();
     void httpRangeRequests();
+    void liveTranscodeStream();
 };
 
 void DlnaTest::timeFormatParse()
@@ -152,6 +156,79 @@ void DlnaTest::httpRangeRequests()
 
     const QByteArray missing = request("GET /nope HTTP/1.1\r\n\r\n");
     QVERIFY(missing.startsWith("HTTP/1.1 404"));
+}
+
+void DlnaTest::liveTranscodeStream()
+{
+    const QString ffmpeg = TranscodeSession::ffmpegPath();
+    if (ffmpeg.isEmpty())
+        QSKIP("ffmpeg not installed");
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath("src.mp4");
+    QProcess gen;
+    gen.start(ffmpeg, {QStringLiteral("-y"), QStringLiteral("-f"), QStringLiteral("lavfi"),
+                       QStringLiteral("-i"), QStringLiteral("testsrc=duration=6:size=640x360:rate=30"),
+                       QStringLiteral("-f"), QStringLiteral("lavfi"),
+                       QStringLiteral("-i"), QStringLiteral("sine=frequency=440:duration=6"),
+                       QStringLiteral("-c:v"), QStringLiteral("mpeg4"), QStringLiteral("-b:v"), QStringLiteral("2M"),
+                       QStringLiteral("-pix_fmt"), QStringLiteral("yuv420p"),
+                       QStringLiteral("-c:a"), QStringLiteral("aac"), QStringLiteral("-shortest"), video});
+    QVERIFY(gen.waitForFinished(15000));
+    QCOMPARE(gen.exitCode(), 0);
+
+    TranscodeSession session;
+    QVERIFY(session.start(video));
+    MediaHttpServer server;
+    QVERIFY(server.startLive(session.stream(), QStringLiteral("video/mp2t")));
+
+    QTcpSocket client;
+    client.connectToHost(QHostAddress::LocalHost, server.serverPort());
+    QVERIFY(client.waitForConnected(2000));
+    client.write("GET /media HTTP/1.1\r\nHost: x\r\n\r\n");
+
+    // Consume ~160KB/s, slower than the output stream, so TCP backpressure
+    // blocks ffmpeg. A fast producer may finish and close within the window;
+    // that is a valid EOF, but closing while ffmpeg still runs is the
+    // premature-EOF bug (empty read buffer mistaken for end of stream).
+    QByteArray received;
+    QElapsedTimer total;
+    total.start();
+    QElapsedTimer sinceRead;
+    sinceRead.start();
+    while (!total.hasExpired(3000)) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        if (sinceRead.elapsed() >= 100 && client.bytesAvailable() > 0) {
+            received += client.read(16 * 1024);
+            sinceRead.restart();
+        }
+        if (client.state() != QAbstractSocket::ConnectedState) {
+            // EOF on the producer stream must precede closing the client;
+            // the process may still be exiting (state reaped a tick later).
+            auto *streamSock = qobject_cast<QTcpSocket *>(session.stream());
+            QVERIFY(streamSock);
+            QCOMPARE(streamSock->state(), QAbstractSocket::UnconnectedState);
+            break;
+        }
+    }
+    if (client.state() == QAbstractSocket::UnconnectedState)
+        received += client.readAll();
+    QVERIFY(received.startsWith("HTTP/1.1 200 OK"));
+    QVERIFY(received.contains("video/mp2t"));
+    const qsizetype bodyStart = received.indexOf("\r\n\r\n") + 4;
+    QVERIFY(bodyStart > 4);
+    QCOMPARE(quint8(received.at(bodyStart)), quint8(0x47)); // TS sync byte
+    QVERIFY(received.size() > 100 * 1024);
+
+    session.stop();
+    QElapsedTimer drain;
+    drain.start();
+    while (client.state() != QAbstractSocket::UnconnectedState && !drain.hasExpired(5000)) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        client.readAll();
+    }
+    QCOMPARE(client.state(), QAbstractSocket::UnconnectedState);
 }
 
 QTEST_MAIN(DlnaTest)

@@ -222,6 +222,7 @@ private:
         }
 
         connect(m_stream, &QIODevice::readyRead, this, [this]() { pump(); });
+        connect(m_stream, &QIODevice::readChannelFinished, this, [this]() { pump(); });
         connect(m_socket, &QTcpSocket::bytesWritten, this, [this]() { pump(); });
         pump();
     }
@@ -236,10 +237,14 @@ private:
 
     // QProcess::atEnd() is true whenever its read buffer is empty, even while
     // running; only treat the stream as ended once the process has exited.
+    // Same trap for QTcpSocket: atEnd() just means the read buffer is empty.
     bool streamAtEnd() const
     {
         if (auto *process = qobject_cast<QProcess *>(m_stream))
             return process->state() == QProcess::NotRunning && m_stream->bytesAvailable() == 0;
+        if (auto *socket = qobject_cast<QTcpSocket *>(m_stream))
+            return socket->state() == QAbstractSocket::UnconnectedState
+                   && m_stream->bytesAvailable() == 0;
         return m_stream->atEnd();
     }
 

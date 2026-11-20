@@ -183,6 +183,7 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 14. **macOS QLocale::system() 受 bundle 本地化声明影响**：Info.plist 只写 `CFBundleDevelopmentRegion=en` 时，中文系统也返回 en_CN。必须加 `CFBundleLocalizations=[zh-Hans,en]`（已加）。另：`-AppleLanguages "(en)"` 启动参数会被 macOS **持久化**到应用 prefs，测完要 `defaults delete com.dbhx.player AppleLanguages`。
 15. **Qt Test 里 QTcpServer 需要事件循环**：客户端 `waitForReadyRead` 不派发其他 socket 的通知，服务端永远 accept 不了。测试里要 `QCoreApplication::processEvents` 泵循环（见 tests/dlnatest.cpp）。
 16. **自定义 Button 宽度**：Basic 样式默认 padding 与 implicitWidth 公式不一致会差 1px 导致文字省略号。AntButton 用 TextMetrics + 显式 padding 解决；图标按钮记得设 `Accessible.name`（UI 自动化/无障碍都靠它）。
+17. **Qt 6.12 已删除 `QIODevice::setReadBufferSize`**：`QProcess`/管道读缓冲无上限，ffmpeg 领跑时会把 stdout 全灌进内存。转码流改用环回 TCP（见 §9d），由 TCP 流控天然背压。
 
 ## 8. DLNA 投屏架构
 
@@ -224,6 +225,16 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
   - **coreaudio 两个坑**：① OpenGL render API 会死锁 coreaudio → 须用 SW 渲染 API；② verbose 日志（`mpv_request_log_messages "v"`）触发 `ca_select_device` 空指针崩溃 → 日志用 "info"；③ 默认音频缓冲太小使音频时钟偏慢（~0.8x）→ `audio-buffer=0.5` 修复。
   - **未解决的致命问题**：mpv **渲染 API 在本机持续慢放**——SW 渲染稳定 ~0.5x（与分辨率/线程/驱动方式无关），OpenGL basic 循环慢、threaded 循环崩溃（NSOpenGLContext 须主线程）。独立 mpv 程序亦复现，属该构建+本机渲染 API 的深层时序问题。
 - **决定**：回退 FFmpeg 后端（用户确认）。libmpv 留分支待后续研究（可能需 universal/不同构建或上游修复）。
+
+## 9d. 投屏转码卡顿修复（2026-11-20）
+
+- **现象**：4K HEVC MKV 投屏（转码路径）电视端「播 1 秒卡 1 秒」，37s 实时只推进 19s 进度。
+- **根因**：① `-re` 把输出钉死在 1x，电视永远攒不出缓冲，任何抖动直接饿死；② 默认 bicubic 4K→1080p 缩放太重，整条流水线本机实测仅 **0.97x**；③ Qt 6.12 删了读缓冲上限（坑#17），无法用 stdout 管道安全领跑。
+- **修复**：去掉 `-re`（让 ffmpeg 领跑）；加 `-sws_flags fast_bilinear`；ffmpeg 输出改 `tcp://127.0.0.1:<port>?tcp_nodelay=1`——**应用侧 QTcpServer 先监听、ffmpeg 作为客户端连入**（TCP 流控背压，内存有界且双平台一致）；`LiveMediaConnection` 增加监听 `readChannelFinished`（流结束后触发收尾，否则电视连接不会关闭）。
+- **实测**（本机 Intel Mac，3840x1608 HEVC 25fps，20s 输出）：现状 0.97x → 去 `-re` 1.46x → 再加 `fast_bilinear` **4.11x**；`-hwaccel videotoolbox` 反而 0.876x（本机硬解更慢，**勿加**）。
+- **踩坑**：ffmpeg `tcp://...?listen=1`（ffmpeg 监听、我方连接）有启动竞态（bind 前连接被拒/重置，表现为连上即 RemoteHostClosed）——必须反过来由我们先 listen。
+- **测试**：`dlnatest` 新增 `liveTranscodeStream`（160KB/s 慢消费者验证背压、无提前 EOF、正常收尾），ctest 全过。
+- **待验收**：真电视 4K HEVC 投屏流畅度。
 
 ## 10. Git 状态与跨机同步
 
