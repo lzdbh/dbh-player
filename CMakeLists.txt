@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(dbhx-player
-    VERSION 0.1.0
+    VERSION 0.1.5
     DESCRIPTION "Cross-platform video player with DLNA casting"
     LANGUAGES CXX)
 
@@ -15,6 +15,7 @@ qt_standard_project_setup()
 qt_add_executable(dbhx-player
     src/main.cpp
 )
+target_compile_definitions(dbhx-player PRIVATE DBHX_VERSION="${PROJECT_VERSION}")
 
 # Keep an organized physical layout under qml/, but flatten the resource
 # paths so every type lives at the module root (Dbhx). This makes

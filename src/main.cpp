@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("DBHX Player"));
-    QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QApplication::setApplicationVersion(QStringLiteral(DBHX_VERSION));
     QApplication::setOrganizationName(QStringLiteral("DBHX"));
     QApplication::setQuitOnLastWindowClosed(true);
     Logging::install();
