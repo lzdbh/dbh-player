@@ -146,6 +146,10 @@ int main(int argc, char *argv[])
     }
 
     QQmlApplicationEngine engine;
+    // The QML module is compiled into the executable at the resource root
+    // (:/Dbhx). Newer Qt locates it automatically; older Qt only resolves
+    // loadFromModule() when the root is on the import path.
+    engine.addImportPath(QStringLiteral(":/"));
     engine.rootContext()->setContextProperty(QStringLiteral("initialFiles"), initialFiles);
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
