@@ -242,6 +242,7 @@ ffmpeg -y -f lavfi -i testsrc=duration=5:size=640x360:rate=30 \
 - **M0/M1/M2**：已提交并推送（`1206ff8`、`61ed0eb`、`d05e4cb`）。
 - **M3–M6**：macOS 端完成，提交记录见 git log（M3 `34baa41`、M4 `ca45f22`、M5 `ba19c08`、M6 见最新）。
 - **2026-11-20：v0.1.5 已发布**（GitHub Release，macOS universal dmg，88MB，ad-hoc 签名）。版本号由 `CMakeLists.txt` 的 `PROJECT_VERSION` 经 `DBHX_VERSION` 宏注入 `main.cpp`；发版流程：`scripts/package-macos.sh` → GitHub Release 上传 dmg。Windows 包仍未发。
+- **2026-11-23：v0.1.6 已发布**（GitHub Release：Windows x64 NSIS 安装包 39MB + macOS universal dmg 83MB）。发版改由 `.github/workflows/build-release.yml` 完成：推送 `v*` 标签即在 GitHub Actions 构建并自动挂附件；Windows/macOS 均用官方 Qt **6.9.3** 二进制（6.12 无公开二进制包），Windows 走 MSVC + windeployqt（app-local CRT）+ NSIS，macOS 走 universal dmg。注意：`loadFromModule` 需把资源根 `:/` 加入 QML 导入路径（Qt 6.9 不会自动找编译进 exe 的模块）。
 - **回家后**：`git pull` → 按 §5 配环境 → §6 构建。
 - ⚠️ **网络**：github.com 在你的网络下需 **Steam++ 加速**（并加 revoke 豁免）才通；push/pull 前确认加速开启。macOS 本机 pip 走清华源、Qt 走 NJU 源（坑#10）。**macOS 已配好 PAT（osxkeychain），可直接 push**。
 - **提交约定**：`feat:`/`fix:` 前缀；**UI 改动先验收再提交**。
