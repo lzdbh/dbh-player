@@ -49,7 +49,7 @@ jobs:
           rm -rf dist
           mkdir -p dist/windows
           cp build/dbhx-player.exe dist/windows/
-          windeployqt --release --qmldir qml dist/windows/dbhx-player.exe
+          windeployqt --release --compiler-runtime --qmldir qml dist/windows/dbhx-player.exe
 
           version=$(grep -m1 -E '^[[:space:]]+VERSION [0-9]' CMakeLists.txt | sed -E 's/.*VERSION ([0-9.]+).*/\1/')
           printf '!define VERSION "%s"\r\n!define ARCH "x64"\r\n' "$version" > dist/version.nsh
