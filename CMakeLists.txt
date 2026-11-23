@@ -146,6 +146,11 @@ target_link_libraries(dbhx-player PRIVATE
     Qt6::Core5Compat
 )
 
+if(WIN32)
+    # Native rounded window corners (DwmSetWindowAttribute), see src/main.cpp.
+    target_link_libraries(dbhx-player PRIVATE dwmapi)
+endif()
+
 # The generated QML type registration includes each header via __has_include,
 # so the header directories must be on the include path.
 target_include_directories(dbhx-player PRIVATE

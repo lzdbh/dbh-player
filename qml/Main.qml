@@ -14,10 +14,14 @@ ApplicationWindow {
     visible: true
     title: AppContext.appName
     flags: Qt.Window | Qt.FramelessWindowHint
-    color: "transparent"
-    // Default ApplicationWindow background is opaque; make it transparent so
-    // the rounded shell's masked corners reveal the desktop.
-    background: Rectangle { color: "transparent" }
+    // Windows 11 rounds the window natively (DWM), so the surface can be opaque.
+    // Other platforms keep a transparent surface and use the masked shell below
+    // for the rounded corners.
+    readonly property bool nativeCorners: Theme.nativeRoundedCorners
+    color: nativeCorners ? Theme.colorBgLayout : "transparent"
+    background: Rectangle {
+        color: nativeCorners ? Theme.colorBgLayout : "transparent"
+    }
 
     property bool panelVisible: false
     property string panelMode: "cast"   // cast | playlist
@@ -127,14 +131,16 @@ ApplicationWindow {
         onCastFailed: (message) => toast.show(message, "error")
     }
 
-    // Rounded window content: a rounded shell masked so the frameless window
-    // gets rounded corners (the window surface itself is transparent).
+    // Rounded window content for platforms without native rounding: the shell is
+    // masked so the frameless window gets rounded corners. On Windows the DWM
+    // rounds the opaque window instead, so neither layer is needed there.
     Rectangle {
         id: shell
         anchors.fill: parent
         radius: 12
+        antialiasing: true
         color: Theme.colorBgLayout
-        layer.enabled: true
+        layer.enabled: !root.nativeCorners
         layer.effect: MultiEffect {
             maskEnabled: true
             maskSource: shellMask
@@ -220,9 +226,10 @@ ApplicationWindow {
         id: shellMask
         anchors.fill: parent
         radius: 12
+        antialiasing: true
         color: "black"
         visible: false
-        layer.enabled: true
+        layer.enabled: !root.nativeCorners
     }
 
     Toast {

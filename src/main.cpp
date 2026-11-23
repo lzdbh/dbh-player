@@ -13,6 +13,10 @@
 #include <QTranslator>
 #include <QUrl>
 
+#ifdef Q_OS_WIN
+#include <dwmapi.h>
+#endif
+
 #include "Logging.h"
 
 namespace {
@@ -32,6 +36,39 @@ QIcon makeTrayIcon()
     p.end();
     return QIcon(pm);
 }
+
+#ifdef Q_OS_WIN
+// Windows 11 rounds top-level windows natively (DWM-drawn, with anti-aliasing
+// and a system shadow). Doing it natively avoids the layered-surface marching
+// ants a QML mask produces at the window corners.
+void installNativeRoundedCorners(QQuickWindow *window)
+{
+    if (!window)
+        return;
+
+    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    const auto setCornerPreference = [hwnd](DWM_WINDOW_CORNER_PREFERENCE preference) {
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &preference,
+                              sizeof(preference));
+    };
+
+    setCornerPreference(DWMWCP_ROUND);
+    // Remove the 1px system border so the dark shell reaches the window edge.
+    const COLORREF noBorder = DWMWA_COLOR_NONE;
+    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &noBorder, sizeof(noBorder));
+
+    // Maximized/fullscreen windows are flush with the screen; rounding there
+    // would reveal the desktop at the corners.
+    const auto update = [setCornerPreference, window]() {
+        const QWindow::Visibility visibility = window->visibility();
+        const bool square = visibility == QWindow::FullScreen
+                            || visibility == QWindow::Maximized;
+        setCornerPreference(square ? DWMWCP_DONOTROUND : DWMWCP_ROUND);
+    };
+    update();
+    QObject::connect(window, &QWindow::visibilityChanged, window, update);
+}
+#endif
 } // namespace
 
 int main(int argc, char *argv[])
@@ -115,10 +152,15 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
     engine.loadFromModule("Dbhx", "Main");
 
-    if (QSystemTrayIcon::isSystemTrayAvailable() && !engine.rootObjects().isEmpty()) {
-        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
-        QObject *player = window ? window->findChild<QObject *>(QStringLiteral("playerController"))
-                                 : nullptr;
+    auto *window = engine.rootObjects().isEmpty()
+                       ? nullptr
+                       : qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+#ifdef Q_OS_WIN
+    installNativeRoundedCorners(window);
+#endif
+
+    if (QSystemTrayIcon::isSystemTrayAvailable() && window) {
+        QObject *player = window->findChild<QObject *>(QStringLiteral("playerController"));
 
         auto *tray = new QSystemTrayIcon(makeTrayIcon(), &app);
         auto *menu = new QMenu();

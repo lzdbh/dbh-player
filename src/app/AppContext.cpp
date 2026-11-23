@@ -1,6 +1,7 @@
 #include "AppContext.h"
 
 #include <QCoreApplication>
+#include <QOperatingSystemVersion>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QtGlobal>
@@ -12,6 +13,8 @@ AppContext::AppContext(QObject *parent)
     m_platform = QStringLiteral("macos");
 #elif defined(Q_OS_WIN)
     m_platform = QStringLiteral("windows");
+    m_nativeRoundedCorners =
+        QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows11;
 #elif defined(Q_OS_LINUX)
     m_platform = QStringLiteral("linux");
 #else
@@ -32,6 +35,11 @@ bool AppContext::isMac() const
 bool AppContext::isWindows() const
 {
     return m_platform == QLatin1String("windows");
+}
+
+bool AppContext::nativeRoundedCorners() const
+{
+    return m_nativeRoundedCorners;
 }
 
 QString AppContext::appName() const

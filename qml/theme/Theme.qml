@@ -7,6 +7,7 @@ import QtQuick
 QtObject {
     readonly property bool isMac: AppContext.isMac
     readonly property bool isWindows: AppContext.isWindows
+    readonly property bool nativeRoundedCorners: AppContext.nativeRoundedCorners
 
     readonly property color colorPrimary: "#2f8cf0"
     readonly property color colorPrimaryHover: "#4a9df5"

@@ -16,6 +16,7 @@ class AppContext : public QObject
     Q_PROPERTY(QString platform READ platform CONSTANT)
     Q_PROPERTY(bool isMac READ isMac CONSTANT)
     Q_PROPERTY(bool isWindows READ isWindows CONSTANT)
+    Q_PROPERTY(bool nativeRoundedCorners READ nativeRoundedCorners CONSTANT)
     Q_PROPERTY(QString appName READ appName CONSTANT)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
 
@@ -25,6 +26,9 @@ public:
     QString platform() const;
     bool isMac() const;
     bool isWindows() const;
+    // Windows 11 rounds frameless windows natively via DWM; elsewhere the QML
+    // shell provides the rounded corners.
+    bool nativeRoundedCorners() const;
     QString appName() const;
     QString appVersion() const;
 
@@ -34,4 +38,5 @@ public:
 
 private:
     QString m_platform;
+    bool m_nativeRoundedCorners = false;
 };
