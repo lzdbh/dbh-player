@@ -43,6 +43,11 @@ jobs:
           $env:PATH = "C:\Qt\$env:QT_VERSION\msvc2022_64\bin;$env:PATH"
           ctest --test-dir build -C Release --output-on-failure
 
+      # windeployqt only finds the VC runtime from a developer environment.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Deploy Qt and build installer
         shell: pwsh
         run: |
