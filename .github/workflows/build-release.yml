@@ -38,7 +38,10 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure
+        shell: pwsh
+        run: |
+          $env:PATH = "C:\Qt\$env:QT_VERSION\msvc2022_64\bin;$env:PATH"
+          ctest --test-dir build -C Release --output-on-failure
 
       - name: Deploy Qt and build installer
         shell: pwsh
