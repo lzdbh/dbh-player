@@ -57,6 +57,15 @@ jobs:
           & "$qtBin\windeployqt.exe" --release --compiler-runtime --qmldir qml dist\windows\dbhx-player.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+          # App-local VC runtime instead of the (admin-only) redist installer.
+          $crt = Join-Path $env:VCToolsRedistDir "x64\Microsoft.VC143.CRT"
+          if (-not (Test-Path $crt)) {
+            $crt = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\VC\Redist\MSVC\*\x64\Microsoft.VC143.CRT" |
+              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          }
+          Copy-Item (Join-Path $crt "*.dll") dist\windows\ -Force
+          Remove-Item dist\windows\vc_redist.x64.exe -ErrorAction SilentlyContinue
+
           $version = (Select-String -Path CMakeLists.txt -Pattern '^\s*VERSION\s+([0-9]+\.[0-9]+\.[0-9]+)').Matches[0].Groups[1].Value
           Set-Content -Path dist\version.nsh -Encoding ASCII `
             -Value "!define VERSION `"$version`"`r`n!define ARCH `"x64`""
