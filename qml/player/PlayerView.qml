@@ -21,7 +21,9 @@ Item {
 
     function showControls() {
         controlsVisible = true
-        hideTimer.restart()
+        // Controls only auto-hide in fullscreen; windowed mode keeps them.
+        if (root.fullscreen)
+            hideTimer.restart()
     }
 
     function takeScreenshot() {
@@ -286,7 +288,7 @@ Item {
         id: hideTimer
         interval: 2500
         onTriggered: {
-            if (root.player.playing && !controlBar.hovered)
+            if (root.fullscreen && root.player.playing && !controlBar.hovered)
                 root.controlsVisible = false
         }
     }
@@ -294,10 +296,22 @@ Item {
     Connections {
         target: root.player
         function onPlayingChanged() {
-            if (root.player.playing)
+            if (root.player.playing && root.fullscreen)
                 hideTimer.restart()
             else
                 root.controlsVisible = true
+        }
+    }
+
+    // Entering fullscreen starts the auto-hide countdown; leaving it restores
+    // the always-visible windowed controls.
+    onFullscreenChanged: {
+        if (root.fullscreen) {
+            if (root.player.playing)
+                hideTimer.restart()
+        } else {
+            hideTimer.stop()
+            root.controlsVisible = true
         }
     }
 }
