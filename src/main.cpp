@@ -1,12 +1,12 @@
 #include <QApplication>
 #include <QColor>
+#include <QIcon>
 #include <QLocale>
 #include <QMenu>
 #include <QPalette>
 #include <QStyleHints>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QPainter>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSystemTrayIcon>
@@ -20,21 +20,14 @@
 #include "Logging.h"
 
 namespace {
-QIcon makeTrayIcon()
+QIcon loadAppIcon()
 {
-    QPixmap pm(64, 64);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(QStringLiteral("#1677ff")));
-    p.drawRoundedRect(4, 4, 56, 56, 14, 14);
-    p.setBrush(Qt::white);
-    QPolygonF triangle;
-    triangle << QPointF(26, 20) << QPointF(26, 44) << QPointF(46, 32);
-    p.drawPolygon(triangle);
-    p.end();
-    return QIcon(pm);
+    QIcon icon;
+    for (const int size : {16, 24, 32, 48, 64, 128, 256}) {
+        icon.addFile(QStringLiteral(":/Dbhx/icons/app-icon-%1.png").arg(size),
+                     QSize(size, size));
+    }
+    return icon;
 }
 
 #ifdef Q_OS_WIN
@@ -53,9 +46,17 @@ void installNativeRoundedCorners(QQuickWindow *window)
     };
 
     setCornerPreference(DWMWCP_ROUND);
-    // Remove the 1px system border so the dark shell reaches the window edge.
-    const COLORREF noBorder = DWMWA_COLOR_NONE;
-    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &noBorder, sizeof(noBorder));
+    // Frameless Qt windows can retain DWM's light default frame. Match it to
+    // the opaque shell and extend the frame so no white edge remains outside
+    // the rounded client area.
+    const BOOL darkMode = TRUE;
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode,
+                          sizeof(darkMode));
+    const COLORREF windowBorder = RGB(0x26, 0x33, 0x3e);
+    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &windowBorder,
+                          sizeof(windowBorder));
+    MARGINS margins = {-1, -1, -1, -1};
+    DwmExtendFrameIntoClientArea(hwnd, &margins);
 
     // Maximized/fullscreen windows are flush with the screen; rounding there
     // would reveal the desktop at the corners.
@@ -93,6 +94,8 @@ int main(int argc, char *argv[])
     QApplication::setApplicationName(QStringLiteral("DBHX Player"));
     QApplication::setApplicationVersion(QStringLiteral(DBHX_VERSION));
     QApplication::setOrganizationName(QStringLiteral("DBHX"));
+    const QIcon appIcon = loadAppIcon();
+    QApplication::setWindowIcon(appIcon);
     QApplication::setQuitOnLastWindowClosed(true);
     Logging::install();
 
@@ -140,10 +143,24 @@ int main(int argc, char *argv[])
     // CLI). Skip option-style args such as -AppleLanguages.
     QStringList initialFiles;
     const QStringList args = app.arguments();
+    qCInfo(lcPlayer) << "startup arguments:" << args;
+    bool optionsEnded = false;
     for (int i = 1; i < args.size(); ++i) {
-        if (!args.at(i).startsWith(QLatin1Char('-')))
-            initialFiles << QUrl::fromLocalFile(args.at(i)).toString();
+        const QString argument = args.at(i);
+        if (!optionsEnded && argument == QLatin1String("--")) {
+            optionsEnded = true;
+            continue;
+        }
+        if (!optionsEnded && argument.startsWith(QLatin1Char('-')))
+            continue;
+        const QUrl url = QUrl::fromUserInput(argument);
+        if (url.isValid())
+            initialFiles.append(url.toString());
+        else
+            qCWarning(lcPlayer) << "ignoring invalid startup argument:" << argument;
     }
+    if (!initialFiles.isEmpty())
+        qCInfo(lcPlayer) << "startup media:" << initialFiles;
 
     QQmlApplicationEngine engine;
     // The QML module is compiled into the executable at the resource root
@@ -166,7 +183,7 @@ int main(int argc, char *argv[])
     if (QSystemTrayIcon::isSystemTrayAvailable() && window) {
         QObject *player = window->findChild<QObject *>(QStringLiteral("playerController"));
 
-        auto *tray = new QSystemTrayIcon(makeTrayIcon(), &app);
+        auto *tray = new QSystemTrayIcon(appIcon, &app);
         auto *menu = new QMenu();
         QObject::connect(menu->addAction(QStringLiteral("显示主界面")), &QAction::triggered,
                          &app, [window]() {

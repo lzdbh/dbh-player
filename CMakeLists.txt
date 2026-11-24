@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(dbhx-player
-    VERSION 0.1.6
+    VERSION 0.1.7
     DESCRIPTION "Cross-platform video player with DLNA casting"
     LANGUAGES CXX)
 
@@ -16,6 +16,11 @@ qt_add_executable(dbhx-player
     src/main.cpp
 )
 target_compile_definitions(dbhx-player PRIVATE DBHX_VERSION="${PROJECT_VERSION}")
+
+if(WIN32)
+    configure_file(cmake/dbhx.rc.in ${CMAKE_CURRENT_BINARY_DIR}/dbhx.rc @ONLY)
+    target_sources(dbhx-player PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dbhx.rc)
+endif()
 
 # Keep an organized physical layout under qml/, but flatten the resource
 # paths so every type lives at the module root (Dbhx). This makes
@@ -56,7 +61,7 @@ set_source_files_properties(qml/controls/AntMenu.qml PROPERTIES
 set_source_files_properties(qml/controls/AntMenuItem.qml PROPERTIES
     QT_RESOURCE_ALIAS AntMenuItem.qml)
 
-# Outline SVG icons (white, colorized in QML), kept under icons/ in the module.
+# Outline SVG controls plus the app icon rasters QIcon picks per target size.
 set(ICON_FILES
     qml/icons/play.svg
     qml/icons/pause.svg
@@ -73,6 +78,13 @@ set(ICON_FILES
     qml/icons/fullscreen-exit.svg
     qml/icons/subtitle.svg
     qml/icons/close.svg
+    qml/icons/app-icon-16.png
+    qml/icons/app-icon-24.png
+    qml/icons/app-icon-32.png
+    qml/icons/app-icon-48.png
+    qml/icons/app-icon-64.png
+    qml/icons/app-icon-128.png
+    qml/icons/app-icon-256.png
 )
 foreach(icon ${ICON_FILES})
     get_filename_component(name ${icon} NAME)

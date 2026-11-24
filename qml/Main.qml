@@ -88,8 +88,10 @@ ApplicationWindow {
                 root.width = parseInt(p[2]); root.height = parseInt(p[3])
             }
         }
-        if (initialFiles.length > 0)
-            playlist.addUrls(initialFiles)
+        if (initialFiles.length > 0) {
+            // WMF can miss an early play request before the native window is exposed.
+            Qt.callLater(function() { playlist.addAndPlay(initialFiles) })
+        }
     }
 
     onClosing: {

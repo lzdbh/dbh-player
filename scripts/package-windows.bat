@@ -16,7 +16,7 @@ copy /y build-release\dbhx-player.exe dist\windows\ || exit /b 1
 windeployqt --release --compiler-runtime --qmldir qml dist\windows\dbhx-player.exe || exit /b 1
 
 REM Version is defined by the project() line in CMakeLists.txt.
-for /f "tokens=3" %%v in ('findstr /r /c:"^project" CMakeLists.txt') do set APP_VERSION=%%v
+for /f "tokens=2" %%v in ('findstr /r /c:"^    VERSION [0-9]*\.[0-9]*\.[0-9]*" CMakeLists.txt') do set APP_VERSION=%%v
 echo Version: %APP_VERSION%
 
 > dist\version.nsh echo !define VERSION "%APP_VERSION%"

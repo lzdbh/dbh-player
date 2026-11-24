@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="screen" x1="512" y1="238" x2="512" y2="706" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#67c4ff"/>
+      <stop offset="0.46" stop-color="#2f8cf0"/>
+      <stop offset="1" stop-color="#145bc0"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="300" y1="226" x2="724" y2="718" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="0.5" stop-color="#c5e8ff" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#6bb8ff" stop-opacity="0.46"/>
+    </linearGradient>
+    <filter id="tileShadow" x="-12%" y="-12%" width="124%" height="128%">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#020812" flood-opacity="0.48"/>
+    </filter>
+    <filter id="screenShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#031225" flood-opacity="0.52"/>
+    </filter>
+  </defs>
+
+  <g id="icon">
+    <rect x="0" y="0" width="1024" height="1024" rx="224" fill="#0d1b2b" filter="url(#tileShadow)"/>
+    <rect x="3" y="3" width="1018" height="1018" rx="221" fill="none"
+          stroke="#ffffff" stroke-opacity="0.08" stroke-width="6"/>
+
+    <g filter="url(#screenShadow)">
+      <rect x="216" y="246" width="592" height="472" rx="112" fill="url(#screen)"/>
+      <rect x="219" y="249" width="586" height="466" rx="109" fill="none"
+            stroke="url(#rim)" stroke-width="6"/>
+    </g>
+
+    <path d="M383 364 C383 346 402 335 418 344 L625 452 C641 461 641 485 625 494
+             L418 602 C402 611 383 600 383 582 Z" fill="#ffffff"/>
+  </g>
+</svg>

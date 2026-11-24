@@ -12,10 +12,17 @@
   !define ARCH "x64"
 !endif
 
+!macro RegisterVideoType extension
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\SupportedTypes" "${extension}" ""
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\Capabilities\FileAssociations" "${extension}" "Applications\dbhx-player.exe"
+!macroend
+
 Unicode true
 SetCompressor /SOLID lzma
 RequestExecutionLevel user
 BrandingText "DBHX Player ${VERSION} (${ARCH})"
+!define MUI_ICON "..\cmake\dbhx-installer.ico"
+!define MUI_UNICON "..\cmake\dbhx-installer.ico"
 
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
@@ -45,6 +52,27 @@ Section "DBHX Player" SecMain
   File /r "..\dist\windows\*.*"
 
   WriteRegStr HKCU "Software\DBHX\DBHX Player" "InstallDir" "$INSTDIR"
+
+  ; Register for "Open with" without changing the user's default application.
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe" "" "DBHX Player"
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe" "FriendlyAppName" "DBHX Player"
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\shell\open" "FriendlyAppName" "DBHX Player"
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\shell\open\command" "" '"$INSTDIR\dbhx-player.exe" "%1"'
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\Capabilities" "ApplicationName" "DBHX Player"
+  WriteRegStr HKCU "Software\Classes\Applications\dbhx-player.exe\Capabilities" "ApplicationDescription" "Cross-platform video player"
+  WriteRegStr HKCU "Software\RegisteredApplications" "DBHX Player" "Software\Classes\Applications\dbhx-player.exe"
+  !insertmacro RegisterVideoType ".mp4"
+  !insertmacro RegisterVideoType ".mkv"
+  !insertmacro RegisterVideoType ".avi"
+  !insertmacro RegisterVideoType ".mov"
+  !insertmacro RegisterVideoType ".flv"
+  !insertmacro RegisterVideoType ".wmv"
+  !insertmacro RegisterVideoType ".ts"
+  !insertmacro RegisterVideoType ".webm"
+  !insertmacro RegisterVideoType ".m4v"
+  !insertmacro RegisterVideoType ".mpg"
+  !insertmacro RegisterVideoType ".mpeg"
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DBHXPlayer" "DisplayName" "DBHX Player"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DBHXPlayer" "DisplayVersion" "${VERSION}"
@@ -76,4 +104,7 @@ Section "Uninstall"
 
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\DBHXPlayer"
   DeleteRegKey HKCU "Software\DBHX\DBHX Player"
+  DeleteRegValue HKCU "Software\RegisteredApplications" "DBHX Player"
+  DeleteRegKey HKCU "Software\Classes\Applications\dbhx-player.exe"
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 SectionEnd
